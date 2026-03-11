@@ -1,0 +1,6 @@
+- This folder contains the Pelican project from which the DocFetcher website is generated.
+- You can build the project with './build.sh'. The output is under './output'.
+- The website consists of four pages: Overview (index), Download, Screenshots and More.
+- Each page has been translated into various languages.
+- The Markdown source files are under './content/pages'.
+- The custom theme is under './themes/docfetcher'.

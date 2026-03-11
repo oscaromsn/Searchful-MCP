@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher手册 - 正则表达式</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="efeire" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">返回主页</a>
+		</div>
+		<div id="main">
+			<h1>常用表达</h1><p>本页面是对正则表达式的简要介绍。它并非详尽无遗，因为正则表达式基本上代表整个模式匹配语言。如果你想深入挖掘，你可以在互联网上找到关于它的大量信息; 只搜索“正则表达式教程”或“正则表达式介绍”或类似的东西。</p><h2>匹配所有Microsoft Excel文件：<code>.*\.xlsx?</code></h2><p>在正则表达式（通常缩写为“正则表达式”）中，某些字符具有特殊含义。例如，<strong><em>dot</em></strong>（<code>&#39;.&#39;</code>）代表一个未知字符。例如，你可以使用正则表达式<code>h.llo</code>来匹配像<code>hallo</code>或<code>hello</code>这样的字符串，还可以使用<code>hzllo</code>或<code>h8llo</code>。</p><p>另一个特殊字符是<strong><em>星号</em></strong>（<code>&#39;*&#39;</code>），代表“前面的字符，重复零次或多次”。因此，如果输入正则表达式<code>hello*</code>，则以下字符串将匹配：<code>hell</code>，<code>hello</code>，<code>helloo</code>，<code>hellooo</code>等等。</p><p>作为这些规则的结果，如果将点和星号放在一起，它们将匹配任意字符序列。例如，正则表达式<code>gen.*ion</code>将匹配：<code>genion</code>，<code>generalization</code>，<code>generation</code>，<code>gentrification</code>等等。</p><p>类似于星号的特殊字符是<strong><em>问号</em></strong>（<code>&#39;?&#39;</code>），它代表“前一个字符，零次或一次”。您也可以将其改写为“前面的角色可能存在也可能不存在”。与星号一样，它可以与点组合。因此，正则表达式<code>hell.?</code>将匹配：<code>hell</code>，<code>hello</code>，<code>hells</code>，<code>hell4</code>等。</p><p>由于点和星号等字符具有特殊含义，如果你想要<em>字面</em>匹配它们，你必须<em>逃避</em>它们。这是通过在它们之前加上另一个特殊字符<strong><em>反斜杠</em></strong>（<code>&#39;\&#39;</code>）来完成的。需要反斜杠的典型情况是匹配文件名中的点。例如，要匹配文件名为<code>license.txt</code>的所有文件，您必须使用正则表达式<code>license\.txt</code>而不仅仅是<code>license.txt</code>&mdash; 后者也会匹配，例如<code>license-txt</code>。</p><p>因此，如果我们把所有这些放在一起，我们可以写下一个匹配所有Microsoft Excel文件的正则表达式，如：<code>.*\.xlsx?</code>。这个正则表达式基本上是说：一个任意的字符序列，后跟一个文字点，后跟“xls”，末尾有一个可选的“x”。</p><h2>匹配一系列数字：<code>journal\d+\.doc</code></h2><p>假设您要匹配所有以“journal”开头并以时间戳结尾的Microsoft Word文件，如下所示：“journal2007.doc”。而且，你*不想要的是匹配像“journalism.doc”这样的文件。</p><p>像<code>journal.*\.doc</code>这样的正则表达式在这里不起作用，因为它也匹配“journalism.doc”。解决方案的第一步是用<code>[0-9]</code>或<code>\d</code>替换点，两者都完全匹配<strong><em>一位</em></strong>。表达式<code>[0-9]</code>实际上是一个比<code>\d</code>更通用的表示法，因为你可以编写<code>[4-6]</code>来匹配数字<code>4</code>，<code>5</code>和<code>6</code>。它甚至适用于字母：<code>[m-p]</code>匹配从m到p的所有小写字母。</p><p>因此，如果我们将<code>\d</code>与星号结合起来，我们可以写下正则表达式<code>journal\d*\.doc</code>，它将与“journal2007.doc”匹配，但不能与“journalism.doc”匹配。但等等，这不太正确：回想一下，星号表示“前面的字符，重复<em>零</em>或更多次”。在这种情况下，我们不希望“日记”之后的<em>零</em>数字，我们想要<em>至少一个</em>&mdash; 否则正则表达式也会匹配文件“journal.doc”。</p><p>所以这是你的另一个特殊角色：<strong><em>加</em></strong>符号(<code>&#39;+&#39;</code>)代表“前面的角色，重复一次或多次”。因此，我们的正则表达式的最终版本是：<code>journal\d+\.doc</code></p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">返回主页</a>
+		</div>
+	</body>
+</html>

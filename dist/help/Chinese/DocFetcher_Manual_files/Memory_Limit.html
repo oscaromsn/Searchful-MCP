@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher手册 - 如何提高内存限制</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="efeire" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Caveats">返回主页</a>
+		</div>
+		<div id="main">
+			<h1>如何提高内存限制</h1><p>DocFetcher的默认内存限制为256MB，在启动时设置。通过摆弄平台特定的发射器可以提高限制：</p><h2>Windows</h2><p>Windows版本的DocFetcher附带现成的备用启动器，可设置不同的堆大小。请按照以下步骤使用它们：</p>
+<ul>
+  <li>打开DocFetcher文件夹。如果您使用的是DocFetcher的便携版本，那么这只是您下载和解压缩的文件夹。如果您使用的是非便携版本，则DocFetcher文件夹将位于<code>C:\Program Files</code>或<code>C:\Program Files (x86)</code>或类似位置。</li>
+  <li>替代发射器位于<code>DocFetcher\misc</code>文件夹中。它们被命名为<code>DocFetcher-XXX.exe</code>，其中<code>XXX</code>是相应启动器设置的堆大小。例如，启动程序<code>DocFetcher-512.exe</code>将设置堆大小为512 MB。</li>
+  <li>在使用任何这些发射器之前，<strong>必须先将其移动或复制到DocFetcher文件夹中</strong>。没有必要删除默认启动器或重命名备用启动器。</li>
+</ul><p>更改内存限制的另一种方法是将文件<code>misc\DocFetcher.bat</code>复制到DocFetcher文件夹中，并在文件的最后一行中更改表达式<code>-Xmx256m</code>，例如更改为<code>-Xmx512m</code>。</p><h2>Linux</h2><p>使用文本编辑器打开启动程序脚本<code>DocFetcher/DocFetcher.sh</code>，在最后一行中，根据需要更改表达式<code>-Xmx256m</code>，例如更改为<code>-Xmx512m</code>。</p><h2>Mac OS&nbsp;X</h2><p>在非便携版和便携版中，DocFetcher都是通过应用程序包启动的。在非便携版本中，应用程序包就是您从下载的磁盘映像中获取的内容。在便携版本中，可以在DocFetcher文件夹中找到应用程序包。</p><p>在这两种情况下，应用程序包实际上都是一个扩展名为<code>.app</code>的文件夹。Finder中应该有一个上下文菜单条目来打开此文件夹。如果您的Mac OS&nbsp;X语言是英语，则此菜单项将命名为“显示包内容”。</p><p>在该文件夹中，您将找到此启动器脚本：<code>Contents/MacOS/DocFetcher</code>。用文本编辑器打开它，在最后一行，根据需要改变表达式<code>-Xmx256m</code>，例如改为<code>-Xmx512m</code>。</p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Caveats">返回主页</a>
+		</div>
+	</body>
+</html>

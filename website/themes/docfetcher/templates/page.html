@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block keywords %}{% if page.keywords %}, {{ page.keywords }}{% endif %}{% endblock %}
+{% block description %}{% if page.description %}{{ page.description }}{% else %}{{ page.summary|striptags }}{% endif %}{% endblock %}
+
+{% block extra_head %}
+{% if page.lang == DEFAULT_LANG %}
+	{% for lang_code in LANG_CODES %}
+		{% if lang_code != DEFAULT_LANG %}
+			<link rel="alternate" hreflang="{{ lang_code }}" href="{{ LANG_URLS[lang_code] }}">
+		{% endif %}
+	{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{{ page.content }}
+{% endblock %}

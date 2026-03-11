@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher Kılavuzu - Sorgu Sözdizimi</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Osman Öz" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+		<div id="main">
+			<h1>Sorgu Sözdizimi</h1><p>Bu sayfa, "temel" den "gelişmiş" e giden mevcut sorgu söz dizimine genel bir bakış sunar. Sorgu sözdizimi, DocFetcher'ın temelindeki arama motoru olan Apache Lucene tarafından sağlanır ve Lucene'nin <a href="http://lucene.apache.org/java/3_4_0/queryparsersyntax.html">sorgu sözdizimi sayfasında</a> daha teknik bir şekilde açıklanır.</p><h2>Boole Operatörleri</h2><p>DocFetcher, <code>OR</code>, <code>AND</code> ve <code>NOT</code> boole operatörlerini destekler. Kelimeler boole operatörleri <em>olmadan</em> birleştirilirse, DocFetcher varsayılan olarak onları <code>OR</code> ile bitiştirilmiş gibi ele alır. Bundan hoşlanmıyorsanız, <a href="Preferences.html">tercihler</a> adresine gidebilir ve <code>AND</code> yi varsayılan olarak ayarlayabilirsiniz.</p><p><code>OR</code>, <code>AND</code> ve <code>NOT</code> yerine sırasıyla <code>||</code>, <code>&amp;&amp;</code> ve <code>&#39;-&#39;</code> (eksi simgesi) de kullanabilirsiniz. Belirli ifadeleri gruplamak için <em>parantez</em> kullanabilirsiniz. İşte bazı örnekler:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Sorgu </th>
+      <th>Ortaya çıkan belgeler şunları içerir...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>köpek OR kedi</code> </td>
+      <td>ya da <code>köpek</code>, veya <code>kedi</code>, veya her ikisi</td>
+    </tr>
+    <tr>
+      <td><code>köpek AND kedi</code> </td>
+      <td>hem <code>köpek</code> hem de <code>kedi</code></td>
+    </tr>
+    <tr>
+      <td><code>köpek kedi</code> </td>
+      <td>(varsayılan olarak <code>köpek OR kedi</code> sorgusuna eşdeğerdir)</td>
+    </tr>
+    <tr>
+      <td><code>köpek NOT kedi</code> </td>
+      <td><code>köpek</code>, ancak <code>kedi</code> değil</td>
+    </tr>
+    <tr>
+      <td><code>-köpek kedi</code> </td>
+      <td><code>kedi</code>, ancak <code>köpek</code> değil</td>
+    </tr>
+    <tr>
+      <td><code>(köpek OR kedi) AND fare</code> </td>
+      <td><code>fare</code>, ve <code>köpek</code> veya <code>kedi</code>, veya her ikisi</td>
+    </tr>
+  </tbody>
+</table><h2>Arama büyük/küçük harfe duyarlı değildir</h2><p>DocFetcher küçük harfli ve büyük harfli karakterler arasında ayrım yapmaz, bu nedenle girdiğiniz kelimelerin tamamen küçük veya tamamen büyük olması veya her ikisinin karışımı olması önemli değildir. Tek istisna, her zaman büyük harfle girilmesi gereken <code>OR</code>, <code>AND</code>, <code>NOT</code> ve <code>TO</code>, anahtar kelimeleridir. (<code>TO</code> anahtar kelimesi için aşağıdaki 'aralık aramaları' bölümüne bakın.)</p><h2>Cümle Aramaları ve Gerekli Terimler</h2><p>Bir kelime öbeğini (yani bir dizi kelime) aramak için, kelime öbeğini çift tırnak içine alın. Aranacak belgelerin belirli bir kelimeyi içermesi gerektiğini belirtmek için kelimenin önüne bir <code>&#39;+&#39;</code> koyun. Elbette bu yapıları boole operatörleri ve parantezlerle birleştirebilirsiniz. Yine bazı örnekler:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Sorgu </th>
+      <th>Ortaya çıkan belgeler şunları içerir...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>&quot;köpek kedi fare&quot;</code> </td>
+      <td>belirli bir sırayla <code>köpek</code>, <code>kedi</code> ve <code>fare</code> kelimeleri</td>
+    </tr>
+    <tr>
+      <td><code>+köpek kedi</code> </td>
+      <td>kesinlikle <code>köpek</code> ve belki de <code>kedi</code></td>
+    </tr>
+    <tr>
+      <td><code>&quot;köpek kedi&quot; AND fare</code> </td>
+      <td><code>köpek kedi</code> ifadesi ve <code>fare</code> kelimesi</td>
+    </tr>
+    <tr>
+      <td><code>+köpek +kedi</code> </td>
+      <td>(<code>köpek AND kedi</code> sorgusuna eşdeğerdir)</td>
+    </tr>
+  </tbody>
+</table><h2>Joker karakterler</h2><p>Soru işaretleri (<code>&#39;?&#39;</code>) ve yıldız işaretleri (<code>&#39;*&#39;</code>) bazı karakterlerin bilinmediğini belirtmek için kullanılabilir. Soru işareti tam olarak bir bilinmeyen karakter anlamına gelirken, yıldız işareti sıfır veya daha fazla bilinmeyen karakter anlamına gelir. Örnekler:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Sorgu </th>
+      <th>Ortaya çıkan belgeler şunları içerir...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>luc?</code> </td>
+      <td><code>lucy</code>, <code>luca</code>, ...</td>
+    </tr>
+    <tr>
+      <td><code>luc*</code> </td>
+      <td><code>luc</code>, <code>lucy</code>, <code>luck</code>, <code>lucene</code>, ...</td>
+    </tr>
+    <tr>
+      <td><code>*ene*</code> </td>
+      <td><code>lucene</code>, <code>energy</code>, <code>generator</code>, ...</td>
+    </tr>
+  </tbody>
+</table><p>Not: Bir kelimenin ilk karakteri olarak joker karakterler kullanılırsa, arama ortalama olarak daha yavaş olma eğilimindedir. Bu, dizinin nasıl yapılandırıldığına bağlıdır: Sanki birinin telefon numarasını aramaya çalışmışsınızdır ve yalnızca o kişinin adını biliyorsunuzdur. Dolayısıyla, yukarıdaki örnekte, <code>*ene*</code> araması muhtemelen diğer aramalardan daha yavaş olacaktır çünkü <code>*ene*</code> bir joker karakterle başlar.</p><h2>Bulanık Aramalar</h2><p>Bulanık aramalar, belirli bir kelimeye <em>benzer</em> kelimeleri aramanıza olanak tanır. Örneğin, <code>roam~</code> ararsanız, DocFetcher <code>foam</code> ve <code>roams</code> gibi kelimeleri içeren dokümanları bulacaktır.</p><p>Ek olarak, 0 ile 1 arasında bir benzerlik eşiği ekleyebilirsiniz, şöyle ki: <code>roam~0.8</code>. Eşik ne kadar yüksekse, dönen eşleşmelerin benzerliği o kadar yüksek olur. Eşiği dışarıda bırakmak, varsayılan değer olan 0,5'i kullanmakla aynıdır.</p><h2>Yakınlık Aramaları</h2><p>Yakınlık aramaları, birbirinden belirli bir mesafede bulunan kelimeleri bulmanızı sağlar. Yakınlık araması yapmak için, bir cümlenin sonuna bir tilde (<code>&#39;~&#39;</code>) ve ardından bir mesafe değeri koyun. &mdash; Bunun sözdizimsel olarak bulanık aramalara benzer olduğunu unutmayın. Örneğin, 10 kelime içinde <code>wikipedia</code> ve <code>lucene</code> içeren dokümanları aramak için şunu yazın: <code>&quot;wikipedia lucene&quot;~10</code></p><h2>Artan Koşullar</h2><p>Sözcüklere özel ağırlıklar atayarak sonuçların alaka düzeyini etkileyebilirsiniz. Örnek: Yalnızca <code>köpek kedi</code> yerine <code>köpek^4 kedi</code> girerseniz, <code>köpek</code> içeren belgeler daha yüksek bir puan alır ve bu nedenle sonuçların en üstüne yaklaşır.</p><p>Arttırma faktörünün pozitif olması gerekmesine rağmen, 1'den az olabilir (ör. 0,2). Yükseltme faktörü belirtilmezse, varsayılan değer 1 kullanılır.</p><h2>Alan Aramaları</h2><p>Varsayılan olarak DocFetcher, ayıklayabildiği tüm metin verilerini, yani belgelerin içeriğini, dosya adlarını ve meta verilerini arayacaktır. Bununla birlikte, aramalarınızı dosya adı ve/veya belirli meta veri alanlarıyla da sınırlayabilirsiniz. Örneğin, başlıkları <code>wikipedia</code> içeren dokümanları aramak için şunu girin: <code>title:wikipedia</code>. Bu, kelime öbeği aramasıyla birleştirilebilir, ör. <code>title:&quot;köpek kedi&quot;</code> veya parantez içinde, ör. <code>title:(köpek kedi)</code>. Aslında, tırnak işaretlerini ve parantezleri atlarsanız, başlıkla <code>kedi</code> değil, yalnızca <code>köpek</code> eşleşir.</p><p>Hangi alanların kullanılabilir olduğu genellikle belge biçimine bağlıdır, ancak bunu pratik bir kural olarak kullanabilirsiniz:</p>
+<!-- Aşağıdaki alan adlarını (dosya adı, başlık vb.) çevirmeyin -->
+<ul>
+  <li><em>Dosyalar</em>: filename, title, author</li>
+  <li><em>E-postalar</em>: subject, sender, recipients</li>
+</ul><h2>Aralık Aramaları</h2><p>DocFetcher, sözlükbilimsel olarak iki kelime <em>arasında</em> olan kelimelerin aranmasına izin verir. Örneğin, <code>beta</code> kelimesi <code>alpha</code> ve <code>gamma</code> arasında yer alır. Bu nedenle, <code>alpha</code> ve <code>gamma</code> arasındaki kelimeleri içeren tüm belgeleri listelemek istiyorsanız, şunu yazın: <code>[alpha TO gamma]</code>.</p><p>Köşeli parantez kullanıldığında, aralık sorgusu <em>kapsayıcıdır</em>, yani sonuçlara <code>alpha</code> ve <code>gamma</code> dahildir. <em>Özel</em> aralık araması yapmak için, bunun yerine süslü parantez kullanın: <code>{alpha TO gamma}</code></p><p>Aralık aramalarını ve alan aramalarını şu şekilde birleştirebilirsiniz: <code>title:{alpha TO gamma}</code>.Bu, aralık aramasını başlık alanıyla sınırlayacaktır.</p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+	</body>
+</html>

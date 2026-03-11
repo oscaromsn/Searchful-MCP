@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Підручник з DocFetcher - Як підвищити ліміт пам'яті</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Urko Kul" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Caveats">Назад на головну сторінку</a>
+		</div>
+		<div id="main">
+			<h1>Як підвищити ліміт пам'яті</h1><p>DocFetcher має стандартний ліміт пам'яті в 256&nbsp;MB, який задається при запуску. Цей ліміт може бути підвищено за допомогою пускачів залежно від платформи:</p><h2>Windows</h2><p>Windows версія DocFetcher'а постачається з готовими до використання альтернативними пускачами, що задають різні розміри накопичення. Здійсніть ці кроки для їх використання:</p>
+<ul>
+  <li>Відкрийте теку DocFetcher'а. Якщо ви використовуєте портативну версію DocFetcher'а, це буде просто тека, яку ви завантажили та розпакували. Якщо ви використовуєте не-портативну версію, то текою DocFetcher'а буде <code>C:\Program Files</code> або <code>C:\Program Files (x86)</code>, чи подібне розміщення.</li>
+  <li>Альтернативні пускачі знаходяться всередині теки <code>DocFetcher\misc</code> folder. Вони названі <code>DocFetcher-XXX.exe</code>, де <code>XXX</code> є розміром накопичення, що задається відповідним пускачем. Наприклад, пускач <code>DocFetcher-512.exe</code> буде задавати розмір накопичення як 512&nbsp;MB.</li>
+  <li>Перші ніж ви зможете використовувати будь-який з цих пускачів, <strong>ви повинні спершу перемістити або скопіювати його у теку DocFetcher</strong>. Не є необхідним видаляти стандартний пускач або перейменовувати альтернативний пускач.</li>
+</ul><p>Інший шлях зміни ліміту пам'яті - скопіювати файл <code>misc\DocFetcher.bat</code> у теку DocFetcher та змінити вираз <code>-Xmx256m</code> в останньому рядку файлу, наприклад, на <code>-Xmx512m</code>.</p><h2>Linux</h2><p>Відкрийте скрипт пускача <code>DocFetcher/DocFetcher.sh</code> у текстовому редакторі та в останньому рядку вираз <code>-Xmx256m</code> змініть, наприклад, на <code>-Xmx512m</code>.</p><h2>Mac OS&nbsp;X</h2><p>В обох версіях не-портативній та портативній, DocFetcher запускається через пакунок застосунку. У не-портативній версії цей пакунок застосунку є просто тим, що ви отримали із завантаженого образу диска. У портативній версії, пакунок застосунку може бути знайдено у теці DocFetcher.</p><p>В обох випадках, пакунок застосунку є фактично текою з розширенням <code>.app</code>. Повинен бути пункт контекстного меню у Finder для відкриття цієї теки. якщо мова вашої Mac OS&nbsp;X є English, цей пункт меню буде називатися <code>Show Package Contents</code>.</p><p>Всередині цієї теки ви знайдете цей скрипт пускача: <code>Contents/MacOS/DocFetcher</code>. Відкрийте його у текстовому редакторі та в останньому рядку змініть вираз <code>-Xmx256m</code> при потребі, наприклад, на <code>-Xmx512m</code>.</p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Caveats">Назад на головну сторінку</a>
+		</div>
+	</body>
+</html>

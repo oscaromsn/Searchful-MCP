@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="{{ DEFAULT_LANG }}">
+<head>
+	<link rel="shortcut icon" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-16x16.png">
+	<link rel="icon" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-32x32.png" sizes="32x32">
+	<link rel="icon" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-48x48.png" sizes="48x48">
+	<link rel="icon" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-192x192.png" sizes="192x192">
+	<link rel="apple-touch-icon" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-180x180.png">
+	<meta name="msapplication-TileImage" content="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-270x270.png">
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}{{ SITENAME }}{% endblock %}</title>
+	<meta name="author" content="{{ AUTHOR }}">
+	<link type="text/css" href="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/web.css" rel="stylesheet">
+	<meta name="keywords" content="DocFetcher, Apache Lucene{% block keywords %}{% endblock %}">
+	<meta name="description" content="{% block description %}Homepage of DocFetcher, a desktop search application for fast document retrieval{% endblock %}">
+	{% block extra_head %}{% endblock %}
+</head>
+<body>
+	<div id="header">
+		<img alt="DocFetcher Logo" src="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/docfetcher-logo.png">
+	</div>
+	<div id="outer-page">
+		<div id="page">
+			<div id="menu">
+				<ul id="nav-bar">
+				{% block nav_menu %}
+				{% set current_lang = DEFAULT_LANG %}
+				{% if lang is defined %}{% set current_lang = lang %}{% endif %}
+				{% set menu = MENU_ITEMS[current_lang] %}
+				<li><a href="{{ SITEURL }}/">{{ menu.overview }}</a></li>
+				<li><a href="{{ SITEURL }}/download/">{{ menu.download }}</a></li>
+				<li><a href="{{ SITEURL }}/screenshots/">{{ menu.screenshots }}</a></li>
+				<li><a href="{{ SITEURL }}/more/">{{ menu.more }}</a></li>
+				{% endblock %}
+				</ul>
+			</div>
+			<div id="content">
+				{% block content %}{% endblock %}
+			</div>
+			<div id="footer">
+				<div id="sf-logo">
+					<a href="https://sourceforge.net/projects/docfetcher"><img src="https://sflogo.sourceforge.net/sflogo.php?group_id=197779&amp;type=13" alt="Get DocFetcher at SourceForge.net. Fast, secure and Free Open Source software downloads" border="0" height="30" width="120"></a>
+				</div>
+				<div id="copyright">
+					Copyright © 2007-{{ CURRENT_YEAR }} DocFetcher Development Team
+				</div>
+			</div>
+		</div>
+		<div id="lang-buttons">
+			<!-- These language buttons follow the language link sorting of Wikipedia. -->
+			<a href="{{ LANG_URLS['en'] }}" title="English" data-lang="en"><img src="/theme/en_US.png" alt="English"></a><br>
+			<a href="{{ LANG_URLS['de'] }}" title="Deutsch" data-lang="de"><img src="/theme/de.png" alt="Deutsch"></a><br>
+			<a href="{{ LANG_URLS['es'] }}" title="Español" data-lang="es"><img src="/theme/es.png" alt="Español"></a><br>
+			<a href="{{ LANG_URLS['fr'] }}" title="Français" data-lang="fr"><img src="/theme/fr.png" alt="Français"></a><br>
+			<a href="{{ LANG_URLS['it'] }}" title="Italiano" data-lang="it"><img src="/theme/it.png" alt="Italiano"></a><br>
+			<a href="{{ LANG_URLS['ru'] }}" title="Русский" data-lang="ru"><img src="/theme/ru.png" alt="Русский"></a><br>
+			<a href="{{ LANG_URLS['tr'] }}" title="Türkçe" data-lang="tr"><img src="/theme/tr.png" alt="Türkçe"></a><br>
+			<a href="{{ LANG_URLS['uk'] }}" title="Українська" data-lang="uk"><img src="/theme/uk.png" alt="Українська"></a><br>
+			<!-- Use zh here, not more specific variants like zh_CN, zh_HK, etc., as we want to direct all Chinese-speaking visitors to zh: -->
+			<a href="{{ LANG_URLS['zh'] }}" title="中文" data-lang="zh"><img src="/theme/zh_CN.png" alt="中文"></a><br>
+		</div>
+	</div>
+	<script src="{{ SITEURL }}/{{ THEME_STATIC_DIR }}/script.js"></script>
+</body>
+</html>

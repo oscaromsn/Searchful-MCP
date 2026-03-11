@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher手册 - 查询语法</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="efeire" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">返回主页</a>
+		</div>
+		<div id="main">
+			<h1>查询语法</h1><p>此页面概述了可用的查询语法，从“基本”到“高级”。查询语法由DocFetcher底层搜索引擎Apache Lucene提供，并在Lucene的<a href="http://lucene.apache.org/java/3_4_0/queryparsersyntax.html">查询语法页面</a>上以更技术的方式进行描述。</p><h2>布尔运算符</h2><p>DocFetcher支持布尔运算符<code>OR</code>，<code>AND</code>和<code>NOT</code>。如果单词连接<em>没有</em>布尔运算符，DocFetcher默认将它们视为与<code>OR</code>连接。如果您不喜欢，可以转到<a href="Preferences.html">preferences</a>并将“AND”设置为默认值。</p><p>而不是“OR”，“AND”和“NOT”，你也可以分别使用<code>||</code>，<code>&amp;&amp;</code>和<code>&#39;-&#39;</code>（减号）。您可以使用<em>括号</em>对某些表达式进行分组。这里有些例子：</p>
+<table>
+  <thead>
+    <tr>
+      <th>查询</th>
+      <th>结果文件包含......</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>dog OR cat</code> </td>
+      <td>either <code>dog</code>, or <code>cat</code>, or both</td>
+    </tr>
+    <tr>
+      <td><code>dog AND cat</code> </td>
+      <td>both <code>dog</code> and <code>cat</code></td>
+    </tr>
+    <tr>
+      <td><code>dog cat</code> </td>
+      <td>(by default equivalent to the query <code>dog OR cat</code>)</td>
+    </tr>
+    <tr>
+      <td><code>dog NOT cat</code> </td>
+      <td><code>dog</code>, but not <code>cat</code></td>
+    </tr>
+    <tr>
+      <td><code>-dog cat</code> </td>
+      <td><code>cat</code>, but not <code>dog</code></td>
+    </tr>
+    <tr>
+      <td><code>(dog OR cat) AND mouse</code> </td>
+      <td><code>mouse</code>, and either <code>dog</code> or <code>cat</code>, or both</td>
+    </tr>
+  </tbody>
+</table><h2>搜索不区分大小写</h2><p>DocFetcher不区分小写和大写字符，因此，如果输入的单词完全小写，或完全大写，或两者兼而有之，则无关紧要。唯一的例外是关键字“OR”，“AND”，“NOT”和“TO”，它们必须始终以大写形式输入。（对于<code>TO</code>关键字，请参阅下面的'范围搜索'部分。）</p><h2>短语搜索和必需条款</h2><p>要搜索短语（即单词序列），请将短语放在双引号中。要指示要搜索的文档必须包含特定单词，请在单词前面加上“+”。当然，您可以将这些结构与布尔运算符和括号组合在一起。再举一些例子：</p>
+<table>
+  <thead>
+    <tr>
+      <th>查询</th>
+      <th>结果文件包含......</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>&quot;dog cat mouse&quot;</code> </td>
+      <td>the words <code>dog</code>, <code>cat</code> and <code>mouse</code>, in that particular order</td>
+    </tr>
+    <tr>
+      <td><code>+dog cat</code> </td>
+      <td>definitely <code>dog</code>, and maybe also <code>cat</code></td>
+    </tr>
+    <tr>
+      <td><code>&quot;dog cat&quot; AND mouse</code> </td>
+      <td>the phrase <code>dog cat</code>, and the word <code>mouse</code></td>
+    </tr>
+    <tr>
+      <td><code>+dog +cat</code> </td>
+      <td>(equivalent to the query <code>dog AND cat</code>)</td>
+    </tr>
+  </tbody>
+</table><h2>通配符</h2><p>问号(<code>&#39;?&#39;</code>)和星号(<code>&#39;*&#39;</code>)可用于表示某些字符未知。问号代表一个未知字符，而星号代表零个或多个未知字符。例子：</p>
+<table>
+  <thead>
+    <tr>
+      <th>查询</th>
+      <th>结果文件包含......</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>luc?</code> </td>
+      <td><code>lucy</code>, <code>luca</code>, ...</td>
+    </tr>
+    <tr>
+      <td><code>luc*</code> </td>
+      <td><code>luc</code>, <code>lucy</code>, <code>luck</code>, <code>lucene</code>, ...</td>
+    </tr>
+    <tr>
+      <td><code>*ene*</code> </td>
+      <td><code>lucene</code>, <code>energy</code>, <code>generator</code>, ...</td>
+    </tr>
+  </tbody>
+</table><p>注意：如果将通配符用作单词的第一个字符，则搜索的平均速度往往较慢。这是由于索引的结构如何：就好像你试图查找某人的电话号码，而你只知道该人的名字。因此，在上面的例子中，搜索<code>*ene*</code>可能比其他搜索慢，因为<code>*ene*</code>以通配符开头。</p><h2>模糊搜索</h2><p>模糊搜索允许您搜索与给定单词<em>相似</em>的单词。例如，如果你搜索<code>roam~</code>，DocFetcher会找到包含<code>foam</code>和<code>roams</code>等单词的文档。</p><p>此外，您可以在0和1之间附加相似性阈值，如下所示：<code>roam~0.8</code>。阈值越高，返回的匹配的相似性越高。省略阈值与使用默认值0.5相同。</p><h2>邻近搜索</h2><p>通过邻近搜索，您可以找到彼此相距特定距离的单词。要进行邻近搜索，请在短语的末尾加上波浪号（<code>&#39;〜&#39;</code>），后跟距离值。&mdash; 请注意，这在语法上与模糊搜索类似。例如，要搜索包含“维基百科”和“lucene”的文档，请在10个单词内输入，输入：<code>&quot;wikipedia lucene&quot;~10</code></p><h2>提升条款</h2><p>您可以通过为单词指定自定义权重来影响结果的相关性排序。示例：如果输入<code>dog^4 cat</code>而不是<code>dog cat</code>，则包含<code>dog</code>的文档将获得更高的分数，因此更接近结果的顶部。</p><p>虽然提升因子必须为正，但它可以小于1（例如0.2）。如果未指定增强因子，则使用默认值1。</p><h2>现场搜索</h2><p>默认情况下，DocFetcher将搜索它能够提取的所有文本数据，即文档的内容，文件名和元数据。但是，您也可以将搜索限制为文件名和/或某些元数据字段。例如，要搜索标题包含“wikipedia”的文档，请输入：<code>title:wikipedia</code>。这可以与短语搜索相结合，例如<code>title:&quot;dog cat&quot;</code>，或括号，例如<code>title:(dog cat)</code>。事实上，如果你省略引号和括号，只有<code>dog</code>将匹配标题，而不是<code>cat</code>。</p><p>哪些字段可用通常取决于文档格式，但您可以将其用作经验法则​​：</p>
+<!-- 不要翻译以下字段名称（文件名，标题等）-->
+<ul>
+  <li><em>Files</em>: filename, title, author</li>
+  <li><em>Emails</em>: subject, sender, recipients</li>
+</ul><h2>范围搜索</h2><p>DocFetcher允许在*两个其他单词之间搜索按字典顺序排列的单词。例如，“beta”这个词位于“alpha”和“gamma”之间。因此，如果要列出包含<code>alpha</code>和<code>gamma</code>之间单词的所有文档，请输入：<code>[alpha TO gamma]</code>。</p><p>使用方括号时，范围查询为<em>包含</em>，即结果中包含“alpha”和“gamma”。要进行<em>exclusive</em> range搜索，请使用大括号：<code>{alpha TO gamma}</code></p><p>您可以按如下方式组合范围搜索和字段搜索：<code>title:{alpha TO gamma}</code>。这会将范围搜索限制为标题字段。</p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">返回主页</a>
+		</div>
+	</body>
+</html>

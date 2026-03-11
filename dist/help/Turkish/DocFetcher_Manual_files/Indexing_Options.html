@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher Kılavuzu - Dizin Oluşturma Seçenekleri</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Osman Öz" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+		<div id="main">
+			<h1>Temel Fikir: Dizin Oluşturma Görevlerinin Sırası</h1><p>Dizin oluşturma yapılandırma penceresi, her biri oluşturulacak veya güncellenecek bir dizini temsil eden bir veya daha fazla sekmeden oluşur. Tüm sekmeler birlikte, öğeleri birer birer işlenen bir görev kuyruğu oluşturur. Sağ üstteki <code>&#39;+&#39;</code> düğmesiyle kuyruğa daha fazla görev ekleyebilirsiniz.</p><p>Her sekmenin sağ alt tarafında bir <code>Çalıştır</code> düğmesi vardır. Tıklayarak, görevin doğru şekilde yapılandırıldığını ve indekslemeye hazır olduğunu onaylarsınız. Kuyrukta bir hazır görev olduğu anda indeksleme başlar.</p><p><code>&#39;+&#39;</code> Düğmesinin sağında başka bir düğme var. Buna tıklamak, tüm konfigürasyon penceresini DocFetcher'ın durum çubuğuna küçültecektir. Bu, arka planda yenilerini oluştururken mevcut dizinler üzerinde arama yapmanızı sağlar.</p><p>Herhangi bir görevi, sekmesinin kapat düğmesine (<code>&#39;x&#39;</code>) tıklayarak iptal edebilirsiniz. Bir görev iptal edildiğinde, kısmen oluşturulan dizini tutma veya atma seçeneği sunulur. Önemli olan, dizinlemeyi herhangi bir noktada durdurup daha sonra devam ettirebilmenizdir. Sürdürme, kısmi dizinde, <code>Arama Kapsamı</code> alanının içerik menüsünden <code>Dizini Güncelle</code> aracılığıyla bir dizin güncellemesi çalıştırılarak yapılır.</p><p>Yapılandırma penceresinin kendisinde de bir kapatma düğmesi vardır (Windows'ta bu, sağ üstteki <code>&#39;x&#39;</code> düğmesidir). Üzerine tıklarsanız, tüm indeksleme görevleri iptal edilecek ve kuyruktan kaldırılacaktır.</p><h1>Dizin Oluşturma Seçenekleri</h1><p>Not: Bu bölüm, klasör ve arşiv dizinleri için mevcut dizinleme seçeneklerine odaklanmaktadır. Outlook PST dizinlerinin seçenekleri için aşağıdaki 'Çeşitli' tablosundaki ilgili girişlere bakın.</p><h2>Dosya Uzantıları</h2><p>'Dosya uzantıları' denetimi, hangi dosyaların düz metin dosyaları veya zip arşivleri olarak ele alınacağını belirlemenize olanak tanır. Yaygın bir kullanım senaryosu, DocFetcher'ın belirli türdeki kaynak kodu dosyalarını dizinlemesidir. Sağdaki iki <code>&#39;...&#39;</code> düğmesine dikkat edin. Bunlara tıklarsanız, DocFetcher dizine eklenecek klasörde dolaşacak ve tüm dosya uzantılarını, aralarından seçim yapabileceğiniz bir listede toplayacaktır.</p><h2>Dosyaları Hariç Tut / Mime Türünü Algıla</h2><p>Tabloya öğeler ekleyerek (1) belirli dosyaları indekslemenin dışında bırakabilir ve (2) belirli dosyalar için mime türü algılamayı etkinleştirebilirsiniz. Bunların tümü normal ifadelere (regexes) dayanmaktadır, bu nedenle bunları nasıl kullanacağınızı bilmiyorsanız, <a href="Regular_Expressions.html">normal ifadelere giriş</a> bölümünü okuyun.</p><p>Şimdi, tablonun çalışma şekli şöyledir: Tablodaki her öğe, ilişkili bir eylemi olan bir düzenli ifadedir. Düzenli ifade, dosya adlarıyla veya dosya yollarıyla eşleştirilebilir ve eylem, "dosyayı dışla" veya "mime türünü algıla" dır. İndeksleme sırasında, bir dosya bir düzenli ifadeyle eşleştirildiğinde, düzenli ifadenin eylemi dosyaya uygulanır.</p><p>Sağ taraftaki <code>&#39;+&#39;</code> ve <code>&#39;-&#39;</code> butonları ile tabloya madde ekleyebilir ve tablodan madde çıkartabilirsiniz. Yukarı ve aşağı düğmeleri, seçili tablo öğesinin <em>önceliğini</em> artırmanıza veya azaltmanıza olanak tanır. Bir dosya tablodaki birden fazla düzenli ifadeyle eşleştirildiğinde öncelik önemli hale gelir; bu durumda en yüksek önceliğe sahip düzenli ifade kazanır ve diğerlerinin tümü yok sayılır.</p><p>Tablonun hemen altında, düzenli ifadeler yazmanıza yardımcı olacak küçük bir araç var: İndekslenecek klasörden belirli bir dosya seçmek için sağdaki <code>&#39;...&#39;</code> düğmesine tıklayın. Bu dosyanın dosya yolu metin alanında görünecektir. Ardından, metin alanının üstündeki metin satırı, tabloda o anda seçili olan düzenli ifadenin seçilen dosyayla eşleşip eşleşmediğini size söyleyecektir.</p><h2>Çeşitli</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Seçenek </th>
+      <th>Yorum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>HTML eşleştirme </td>
+      <td>HTML dosyalarının ve ilişkili klasörlerinin (örneğin bir "foo.html" dosyası ve "foo_files" klasörü) tek bir belge olarak değerlendirilip değerlendirilmeyeceği.</td>
+    </tr>
+    <tr>
+      <td>Yürütülebilir zip ve 7z arşivlerini algılama (daha yavaş) </td>
+      <td>Etkinleştirilirse, DocFetcher, yürütülebilir bir zip veya 7z arşivi olup olmadığını <code>exe</code> uzantısına sahip <em>her</em> dosyayı kontrol edecektir.</td>
+    </tr>
+    <tr>
+      <td>Dosya içeriği ayıklanamasa bile dizin dosya adı </td>
+      <td>Etkinleştirilirse, DocFetcher herhangi bir dosya içeriğinin çıkarılıp çıkarılamayacağına bakılmaksızın <em>tüm</em> dosyaları dizinine dahil edecektir. Tam dosya adı araması için bunu etkinleştirin. Ancak DocFetcher'ın dizinlenen klasördeki dosya sayısına bağlı olarak çok daha fazla bellek kaplayabileceğini unutmayın. Belleğinizin bitmesi durumunda, <a href="Memory_Limit.html">bellek sınırını artırabilirsiniz</a>.</td>
+    </tr>
+    <tr>
+      <td>Mümkünse göreceli yolları saklayın (taşınabilirlik için) </td>
+      <td>DocFetcher'in taşınabilir sürümünü kullanıyorsanız bu ayar önemlidir. Bununla ilgili daha fazla bilgiyi <a href="Portable_Repositories.html">taşınabilir belge havuzları</a> sayfasında okuyabilirsiniz.</td>
+    </tr>
+    <tr>
+      <td>Dosya değişiklikleri için klasörleri izleyin </td>
+      <td>DocFetcher'in indekslenmiş klasörlerdeki değişiklikleri tespit edip etmeyeceği ve buna göre indekslerini güncellemesinin gerekip gerekmediği. Bu ayar DocFetcher artalan sürecini etkilemez.</td>
+    </tr>
+  </tbody>
+</table>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+	</body>
+</html>

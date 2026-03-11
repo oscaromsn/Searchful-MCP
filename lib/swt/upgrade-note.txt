@@ -1,0 +1,12 @@
+In their current version (SWT 4.34), the SWT jar files contain the following jar-signing-related files:
+
+/META-INF/ECLIPSE_.RSA
+/META-INF/ECLIPSE_.SF
+
+Combined with Java 17 and later, the presence of these two files causes the application launch in the release versions as well the project build inside IntelliJ IDEA to fail with an error that looks like this:
+
+"Invalid signature file digest for Manifest main attributes"
+
+The workaround used here is to delete the above files from all SWT jar files.
+
+If SWT is upgraded to a new version, remember to delete the two files again.

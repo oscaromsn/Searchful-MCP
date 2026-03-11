@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Guida di DocFetcher - Opzioni di indicizzazione</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Topoldo" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ritorno alla pagina principale</a>
+		</div>
+		<div id="main">
+			<h1>L'idea di fondo: una coda di attività di indicizzazione</h1><p>La finestra di configurazione dell'indicizzazione è costituita di una o più schede, ciascuna delle quali rappresenta un indice da creare o da aggiornare. Tutte le schede assieme costituiscono la <em>coda di attività</em> che deve essere eseguita, le cui voci vengono processate una ad una. A questa coda è possibile aggiungere ulteriori attività utilizzando il pulsante <code>&#39;+&#39;</code> posto in alto a destra.</p><p>Ciascuna scheda presenta un pulsante <code>Esegui</code> posto in basso a destra. Facendo clic su di esso, si conferma che l'attività è stata correttamente configurata ed è pronta per l'indicizzazione che si avvia non appena c'è una attività pronta in coda.</p><p>A destra del pulsante <code>&#39;+&#39;</code> c'è un altro pulsante. Facendo clic su quest'ultimo, la finestra di configurazione di DocFetcher viene minimizzata sulla barra delle applicazioni consentendo di effettuare ricerche sugli indici già creati mentre se ne stanno creando di nuovi in background.</p><p>È possibile annullare qualsiasi attività facendo clic sul pulsante di chiusura (<code>&#39;X&#39;</code>) di ciascuna scheda. Se l'attività viene annullata, viene comunque data la possibilità di mantenere o di eliminare l'indice creato fino a quel momento. In tal modo è anche possibile arrestare l'indicizzazione e riprenderla in un secondo tempo, a partire dal punto in cui era giunta. La ripresa consiste semplicemente nell'aggiornamento dell'indice parziale, tramite il comando <code>Aggiorna Indice</code> dal menu contestuale presente nell'area <code>Ambito di ricerca</code>.</p><p>La finestra di configurazione possiede anch'essa un pulsante di chiusura (in Windows è il pulsante con la <code>&#39;X&#39;</code> in alto a destra). Facendo clic su di esso tutte le attività di indicizzazione in corso vengono annullate e rimosse dalla coda.</p><h1>Opzioni di indicizzazione</h1><p>Questa sezione si focalizza sulle opzioni di indicizzazione disponibili per gli indici di cartella e di archivio.</p><h2>Estensioni file</h2><p>Il controllo delle <em>Estensioni dei file</em> consente di specificare quali file debbano essere trattati come file di testo semplice e quali come archivi zip. Uno scenario di comune riscontro è quello in cui DocFetcher deve indicizzare certi tipi di file aventi differente estensione ma che rappresentano tutti del codice sorgente e che pertanto sono dei file di testo semplice. Si notino i due pulsanti "<code>...</code>" presenti a destra dei campi di testo. Facendo clic su di essi, DocFetcher si può spostare tra le cartelle da indicizzare raccogliendo tutte le estensioni dei file in un elenco dal quale vanno scelte quelle che debbono essere associate ai file di testo semplice e agli archivi zip.</p><h2>Esclusione file / Riconoscimento tipo di MIME</h2><p>Aggiungendo elementi alla tabella, è possibile: (1) escludere dall'indicizzazione certi file e (2) abilitare per taluni file il riconoscimento del tipo di MIME. Tutto ciò si basa sulle cosiddette espressioni regolari (Regular expressions, RegEx). Se non le si si sapesse usare, è opportuno leggere la sezione di introduzione alle <a href="Regular_Expressions.html">espressioni regolari</a>.</p><p>Ecco come funzionano le tabelle: ciascun elemento della tabella è una espressione regolare cui è associata una certa azione. L'espressione regolare viene confrontata con i nomi dei file o con il percorso assoluto per raggiungere il/i file, mentre l'azione può essere l'<em>esclusione</em> o il <em>riconoscimento del tipo di MIME</em> del/i file. Durante l'indicizzazione, quando un file corrisponde ad una espressione regolare presente nella tabella, gli viene applicata l'azione ad essa associata.</p><p>È possibile aggiungere o togliere elementi dalla tabella utilizzando i pulsanti <code>&#39;+&#39;</code> e <code>&#39;-&#39;</code> posti a destra. I pulsanti "Su" e "Giù" invece consentono di aumentare o ridurre la <em>priorità</em> degli elementi selezionati nella tabella. La priorità acquista importanza quando un file corrisponde a più di una espressione regolare nella tabella; in quel caso l'espressione regolare avente maggiore priorità <em>vince</em> e tutte le altre vengono ignorate.</p><p>Al di sotto della tabella si trova uno strumento di aiuto per l'uso delle espressioni regolari. Facendo clic sul pulsante <code>&#39;...&#39;</code> posto a destra è possibile selezionare qualcuno dei file presenti nella cartella che deve essere indicizzata, mentre ll percorso per raggiungerlo viene mostrato nel campo di testo. La riga posizionata sopra al campo di testo segnala all'utilizzatore se l'espressione regolare correntemente selezionata nella tabella corrisponde o no al file selezionato.</p><h2>Varie</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Opzione </th>
+      <th>Commento</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Indicizzazione delle coppie HTML come documento unico </td>
+      <td>Permette di scegliere se un file HTML e la relativa cartella associata (per esempio il file <code>pippo.html</code> e la relativa cartella <code>pippo_files</code>) devono essere indicizzati come un unico documento o no.</td>
+    </tr>
+    <tr>
+      <td>Riconoscimento degli archivi zip e 7z eseguibili (rallenta il processo) </td>
+      <td>Se questa funzione è abilitata, DocFetcher controlla <em>ciascun</em> file con estensione <code>exe</code> per verificare se si tratta di di un archivio zip o 7z eseguibile.</td>
+    </tr>
+    <tr>
+      <td>Indicizzazione del nome dei file anche se è impossibile indicizzarne il contenuto </td>
+      <td>Se questa opzione è abilitata, DocFetcher includerà <em>tutti</em> i file nel suo indice, indipendentemente dal fatto che il loro contenuto possa essere indicizzato. Questa opzione deve essere abilitata per poter effettuare una ricerca completa sul nome dei file. Si noti però che DocFetcher potrebbe necessitare di una notevole quantità di memoria, in funzione del numero di file presenti nella cartella indicizzata. Qualora si andasse <em>out of memory</em> sarebbe necessario <a href="Memory_Limit.html">aumentare la quantità di memoria disponibile</a>.</td>
+    </tr>
+    <tr>
+      <td>Memorizzazione di percorsi relativi se possibile (favorisce la portatilità) </td>
+      <td>Questa impostazione è importante se si usa la versione portatile di DocFetcher. Per saperne di più si legga questa sezione riguardante le <a href="Portable_Repositories.html">raccolte di documenti portatili</a>.</td>
+    </tr>
+    <tr>
+      <td>Sorveglianza sulle cartelle per eventuali modifiche ai file </td>
+      <td>Se questa impostazione è attiva, DocFetcher dovrebbe essere in grado di riconoscere eventuali modifiche a carico delle cartelle indicizzate aggiornando di conseguenza i propri indici. Questa impostazione non ha effetti sul servizio (demone) di DocFetcher.</td>
+    </tr>
+  </tbody>
+</table>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ritorno alla pagina principale</a>
+		</div>
+	</body>
+</html>

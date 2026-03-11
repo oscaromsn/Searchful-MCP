@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher Kılavuzu - Taşınabilir Belge Havuzları</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Osman Öz" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+		<div id="main">
+			<h1>Taşınabilir Belge Havuzları</h1><h2>Temel kullanım</h2><p>DocFetcher'ın taşınabilir sürümü, esasen tamamen indekslenmiş ve tamamen aranabilir bir belge havuzunu taşımanıza (ve hatta yeniden dağıtmanıza) izin verir. Henüz taşınabilir sürüme sahip değilseniz, <a href="http://docfetcher.sourceforge.net">proje web sitesinden</a> indirebilirsiniz.</p><p>Taşınabilir sürüm herhangi bir kurulum gerektirmez; arşivin içeriğini seçtiğiniz bir klasöre çıkarmanız yeterlidir. Daha sonra DocFetcher'ı işletim sisteminiz için uygun başlatıcı aracılığıyla başlatabilirsiniz: Windows'ta <code>DocFetcher.exe</code> Linux'ta <code>DocFetcher.sh</code> ve Mac OS&nbsp;X'te <code>DocFetcher</code> uygulama paketi. Tek gereksinim, makineye bir Java çalışma zamanının, sürüm 1.6 veya daha yeni bir sürümün yüklenmesi gerektiğidir.</p><p><u>Göreceli yollar</u>: Dikkat edilmesi gereken önemli bir nokta, tüm dizinlerin <em>göreceli yollar</em> ayarı açık olarak oluşturulması gerektiğidir. Bu olmadan, DocFetcher dosyalarınıza <em>mutlak</em> referanslar kaydeder, böylece yalnızca DocFetcher'ı ve dizinlerini taşıyabilirsiniz, ancak dosyalarınızı taşıyamazsınız &mdash; en azından referansları bozmadan. İşte bunu açıklamak için bir örnek:</p>
+<ul>
+  <li>Göreceli yol: <code>..\..\dosyalarım\bazı-belge.txt</code></li>
+  <li>Mutlak yol: <code>C:\dosyalarım\bazı-belge.txt</code></li>
+</ul><p>Göreceli yol temelde DocFetcher'a şu anki konumundan iki seviye yukarı giderek <code>dosyalarım</code> klasörüne giderek <code>bazı-belge.txt</code> bulabileceğini söyler. Öte yandan, mutlak yol sabit bir referanstır ve DocFetcher'ın mevcut konumundan bağımsızdır, bu nedenle referansı bozmadan <code>bazı-belge.txt</code> i taşıyamazsınız (yani DocFetcher dosyayı bulamaz).</p><p>DocFetcher'ın yalnızca göreceli yolları depolamaya <em>çalışabileceğini</em> unutmayın: Açıkçası, DocFetcher'ı ve dosyalarınızı farklı birimlere koyarsanız, bunu yapamaz, örn. <code>D:\DocFetcher</code> içindeki DocFetcher ve <code>E:\dosyalarım</code> içindeki dosyalarınız.</p><h2>Kullanılabilirlik ipuçları</h2>
+<ul>
+  <li><strong><em>CD-ROM arşivleme</em></strong>: Sağduyu, ama yine de: DocFetcher'ı bir CD-ROM'a koyarsanız, tercihlerdeki veya dizinlerdeki değişiklikleri kaydedemezsiniz, bu yüzden CD-ROM'a yazmadan önce her şeyi düzgün bir şekilde yapılandırmayı unutmayın. Ayrıca, bir Java çalışma zamanı yükleyicisi eklemek isteyebilirsiniz.</li>
+  <li><strong><em>Farklı program başlıkları</em></strong>: Taşınabilir belge havuzunuzun yeniden dağıtılması veya birden çok DocFetcher örneğiyle çalışmayı daha az kafa karıştırıcı hale getirmek için, her DocFetcher örneğine farklı bir program penceresi başlığı verebilirsiniz. Bunu yapmak için, tercihler iletişim kutusundaki <code>Gelişmiş Ayarlar</code> ı açın ve <code>UygulamaAdı</code> ayarını değiştirin.</li>
+</ul><h2>Uyarılar</h2>
+<ul>
+  <li><strong><em><code>Dizinler</code> klasörüne dokunmayın</em></strong>: Dosyalarınızı doğrudan DocFetcher klasörüne koyabilirsiniz, ancak gerekli değildir. Bunu yaparsanız, <code>dizinler</code> klasörünü rahat bırakın, çünkü içine koyduğunuz her şey silinebilir!</li>
+  <li><strong><em>Dosya adı uyumsuzlukları</em></strong>: Farklı işletim sistemleri arasındaki dosya adı uyumsuzluklarına dikkat edin. Örneğin, Linux'ta dosya adları ":" veya "|", gibi karakterler içerebilir, ancak Windows'ta yapamazlar. Sonuç olarak, bir belge havuzunu yalnızca uyumsuz dosya adlarına sahip belgeler içermiyorsa Linux'tan Windows'a veya ters yönde taşıyabilirsiniz. Oh, ve Alman umlautları gibi özel karakterler tamamen farklı bir konu...</li>
+</ul>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ana sayfaya dön</a>
+		</div>
+	</body>
+</html>

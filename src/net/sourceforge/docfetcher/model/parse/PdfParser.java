@@ -1,0 +1,305 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Tran Nam Quang.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Tran Nam Quang - initial API and implementation
+ *******************************************************************************/
+
+package net.sourceforge.docfetcher.model.parse;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup;
+import org.apache.xmpbox.XMPMetadata;
+import org.apache.xmpbox.schema.AdobePDFSchema;
+import org.apache.xmpbox.schema.DublinCoreSchema;
+import org.apache.xmpbox.xml.DomXmpParser;
+import org.apache.xmpbox.xml.XmpParsingException;
+
+import com.google.common.io.Closeables;
+
+import net.sourceforge.docfetcher.enums.Msg;
+import net.sourceforge.docfetcher.util.annotations.NotNull;
+
+/**
+ * @author Tran Nam Quang
+ */
+public final class PdfParser extends StreamParser {
+	
+	private static final Collection<String> extensions = Collections.singleton("pdf");
+	private static final Collection<String> types = MediaType.Col.application("pdf");
+	
+	PdfParser() {
+	}
+	
+	@Override
+	protected ParseResult parse(@NotNull InputStream in,
+	                            @NotNull final ParseContext context)
+			throws ParseException {
+		PDDocument pdfDoc = null;
+		try {
+			try {
+				pdfDoc = PDDocument.load(in);
+			}
+			catch (InvalidPasswordException e) {
+				throw new ParseException(Msg.doc_pw_protected.get());
+			}
+			catch (RuntimeException e) {
+				/*
+				 * Bug #1459 with PDFBox 2.0.9: PDFBox throws a
+				 * ClassCastException on some files.
+				 */
+				throw new ParseException(e);
+			}
+			catch (NoClassDefFoundError e) {
+				/*
+				 * Bug #2252: When PDFBox attempts to load encrypted PDF files,
+				 * it initializes encryption/decryption classes from the
+				 * javax.crypto package (NoSuchPaddingException, Cipher, etc.).
+				 * On Java 9+ with module system restrictions, these JCE classes
+				 * may not be accessible, resulting in NoClassDefFoundError.
+				 *
+				 * The error occurs in PDFBox's SecurityHandlerFactory when it
+				 * tries to instantiate encryption handlers via reflection for
+				 * encrypted PDFs.
+				 *
+				 * This is similar to bug #2077 (OpenDocument NoClassDefFoundError
+				 * on Java 9+) and other module system restriction issues.
+				 *
+				 * By catching and converting to ParseException, we allow indexing
+				 * to continue with other files rather than crashing the entire
+				 * indexing process.
+				 */
+				throw new ParseException(e);
+			}
+			catch (UnsatisfiedLinkError e) {
+				/*
+				 * Bug #2357: PDFBox's initialization of PDDocument triggers AWT
+				 * component initialization for image/graphics rendering. When AWT
+				 * native libraries (libawt_xawt.so on Linux, awt.dll on Windows)
+				 * cannot load due to missing dependencies, an UnsatisfiedLinkError
+				 * is thrown.
+				 *
+				 * On Linux: Can occur when libawt_xawt.so's dependencies are
+				 * missing (e.g., in minimal Java installations).
+				 *
+				 * On Windows: Can occur when awt.dll's MSVC runtime dependencies
+				 * (msvcp120.dll, msvcr120.dll) are missing.
+				 *
+				 * This is similar to bugs #2361, #2398, #2404, #2419, and #2441,
+				 * where UnsatisfiedLinkError prevented graceful error handling.
+				 *
+				 * By catching and converting to ParseException, we allow indexing
+				 * to continue with other files rather than crashing the entire
+				 * indexing process.
+				 */
+				throw new ParseException(e);
+			}
+			
+			final int pageCount;
+			try {
+				pageCount = pdfDoc.getNumberOfPages();
+			}
+			catch (RuntimeException e) {
+				/*
+				 * Bug #1443 with PDFBox 2.0.9: PDFBox throws an
+				 * IllegalArgumentException with a "root cannot be null" error
+				 * message on malformed PDF files.
+				 */
+				throw new ParseException(e);
+			}
+			StringWriter writer = new StringWriter();
+			final StringBuilder annotations = new StringBuilder();
+			
+			/*
+			 * If the PDF file is encrypted, the PDF stripper will automatically
+			 * try an empty password.
+			 */
+			PDFTextAndAnnotationStripper stripper = new PDFTextAndAnnotationStripper() {
+				@Override
+				protected void startPage(PDPage page) throws IOException {
+					context.getReporter().subInfo(getCurrentPageNo(), pageCount);
+				}
+				@Override
+				protected boolean isCanceled() {
+					return context.getCancelable().isCanceled();
+				}
+				@Override
+				protected void writeAnnotations(PDPage page) {
+					try {
+						for (PDAnnotation a : page.getAnnotations()) {
+							if (a instanceof PDAnnotationMarkup) {
+								PDAnnotationMarkup annot = (PDAnnotationMarkup) a;
+								String title = annot.getTitlePopup();
+								String subject = annot.getSubject();
+								String contents = annot.getContents();
+								if (title != null) {
+									annotations.append(title + " ");
+								}
+								if (subject != null) {
+									annotations.append(subject + " ");
+								}
+								if (contents != null) {
+									annotations.append(contents + " ");
+								}
+							}
+						}
+					} catch (IOException e) {
+						System.err.println(e.getMessage());
+					}
+				}
+			};
+			
+			try {
+				stripper.writeText(pdfDoc, writer);
+			}
+			catch (RuntimeException e) {
+				/*
+				 * PDFTextStripper.writeText can throw various
+				 * RuntimeExceptions, see bugs #3446010, #3448272, #3444887.
+				 */
+				throw new ParseException(e);
+			}
+			catch (NoClassDefFoundError e) {
+				/*
+				 * Bug #2292: PDFBox's font initialization (FontMapperImpl, PDType1Font,
+				 * etc.) can fail with NoClassDefFoundError when OutOfMemoryError occurs
+				 * during static initialization. Java wraps the OutOfMemoryError in an
+				 * ExceptionInInitializerError, which then manifests as NoClassDefFoundError
+				 * on subsequent access attempts.
+				 *
+				 * This is similar to bug #2423 (in PagingPdfParser) and bug #1977.
+				 * The fix unwraps the error chain to detect OutOfMemoryError and
+				 * re-throw it as CheckedOutOfMemoryError, allowing ParseService to
+				 * display a user-friendly out-of-memory message.
+				 *
+				 * If not OOM-related, the NoClassDefFoundError is treated as a
+				 * general parse exception.
+				 */
+				Throwable cause = e.getCause();
+				if (cause instanceof ExceptionInInitializerError) {
+					Throwable rootCause = cause.getCause();
+					if (rootCause instanceof OutOfMemoryError) {
+						throw (OutOfMemoryError) rootCause;
+					}
+				}
+				throw new ParseException(e);
+			}
+			catch (ExceptionInInitializerError e) {
+				/*
+				 * Thrown since PDFBox 2.0.9, see bug #1477.
+				 */
+				throw new ParseException(e);
+			}
+			catch (InternalError e) {
+				/*
+				 * Bug #2158: When PDFBox attempts to decrypt encrypted PDF files,
+				 * it initializes Java security providers via
+				 * SecurityHandlersManager.getInstance(). This triggers loading of
+				 * cryptographic provider JAR files (e.g., sunec.jar) from the JRE.
+				 *
+				 * If the Java installation is corrupted or incomplete (missing JAR
+				 * files in jre/lib/ext/), the classloader throws InternalError with
+				 * a wrapped FileNotFoundException.
+				 *
+				 * This typically occurs with malformed Java installations where
+				 * security provider libraries are missing or the java.ext.dirs
+				 * system property points to invalid paths.
+				 *
+				 * By catching and converting to ParseException, we allow indexing
+				 * to continue with other files rather than crashing the entire
+				 * indexing process.
+				 */
+				throw new ParseException(e);
+			}
+
+			writer.write(" ");
+			writer.write(annotations.toString());
+			
+			ParseResult result = new ParseResult(writer.getBuffer());
+			extractMetadata(pdfDoc, result);
+			return result;
+		}
+		catch (IOException e) {
+			throw new ParseException(e);
+		}
+		finally {
+			Closeables.closeQuietly(pdfDoc);
+		}
+	}
+	
+	protected Collection<String> getExtensions() {
+		return extensions;
+	}
+	
+	protected Collection<String> getTypes() {
+		return types;
+	}
+	
+	public String getTypeLabel() {
+		return Msg.filetype_pdf.get();
+	}
+	
+	private static void extractMetadata(PDDocument pdfDoc, ParseResult result) {
+		try {
+			PDDocumentInformation information = pdfDoc.getDocumentInformation();
+			if (information != null) {
+				result.setTitle(information.getTitle());
+				result.addAuthor(information.getAuthor());
+				result.addMiscMetadata(information.getSubject());
+				result.addMiscMetadata(information.getKeywords());
+			}
+			
+			PDDocumentCatalog catalog = pdfDoc.getDocumentCatalog();
+			PDMetadata meta = catalog.getMetadata();
+			if (meta != null) {
+				final DomXmpParser xmpParser;
+				try {
+					xmpParser = new DomXmpParser();
+					XMPMetadata metadata = xmpParser.parse(meta.createInputStream());
+					
+					DublinCoreSchema dc = metadata.getDublinCoreSchema();
+					if (dc != null) {
+						result.addMiscMetadata(dc.getDescription());
+						List<String> subjects = dc.getSubjects();
+						if (subjects != null) {
+							for (String subject : dc.getSubjects())
+								result.addMiscMetadata(subject);
+						}
+					}
+					
+					AdobePDFSchema pdf = metadata.getAdobePDFSchema();
+					if (pdf != null) {
+						result.addMiscMetadata(pdf.getKeywords());
+					}
+				}
+				catch (XmpParsingException e) {
+					// Ignore
+				}
+				catch (IOException e) {
+					// Ignore
+				}
+			}
+		}
+		catch (RuntimeException e) {
+			// ClassCastException, see bug #1465 and #1469
+		}
+	}
+
+}

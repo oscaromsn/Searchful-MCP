@@ -1,0 +1,240 @@
+/* CSS Variables */
+:root {
+	--theme-color: rgb(232, 185, 83);
+	--theme-border: 3px solid var(--theme-color);
+	--font-family: Helvetica, Arial, sans-serif;
+	--max-width: 800px;
+	--note-bg: rgb(255, 252, 230);
+	--table-header-bg: rgb(255, 255, 204);
+	--border-silver: 1px solid silver;
+}
+
+/* Global Styles */
+html {
+	scrollbar-gutter: stable;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+div {
+	font: 100% var(--font-family);
+}
+
+/* Typography */
+h1 {
+	font: bold 120% var(--font-family);
+	color: rgb(184, 146, 66);
+}
+
+/* Links */
+a:link,
+a:visited {
+	text-decoration: underline;
+	color: black;
+}
+
+a:hover {
+	text-decoration: underline;
+	color: goldenrod;
+}
+
+/* Lists */
+li {
+	padding: 2px 0;
+}
+
+ul {
+	list-style-image: url(bullet.png);
+	padding-left: 30px;
+}
+
+/* Tables */
+table {
+	padding: 0;
+	border: var(--border-silver);
+	border-collapse: collapse;
+	text-align: center;
+	width: 100%;
+}
+
+table th {
+	padding: 8px 4px;
+	border: var(--border-silver);
+	background-color: var(--table-header-bg);
+}
+
+table td {
+	padding: 2px 4px;
+	border: var(--border-silver);
+}
+
+table#download {
+	table-layout: fixed;
+}
+
+/* Layout Structure */
+div#outer-page {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	padding: 0 5px;
+	display: flex;
+	gap: 0;
+}
+
+div#page {
+	margin-top: 12px;
+	flex: 1;
+	min-width: 0;
+}
+
+div#header {
+	text-align: center;
+	margin-bottom: 10px;
+}
+
+div#header img {
+	max-width: 100%;
+	height: auto;
+}
+
+div#content {
+	text-align: left;
+	padding: 20px 30px;
+	border: var(--theme-border);
+	margin: 2px 0 0 0;
+}
+
+div#footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+div#sf-logo {
+	margin: 0;
+	padding: 0;
+}
+
+div#sf-logo a {
+	padding-right: 10px;
+}
+
+div#copyright {
+	margin-top: 5pt;
+	height: 37px;
+	color: gray;
+}
+
+/* Navigation */
+ul#nav-bar {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	gap: 4px;
+}
+
+ul#nav-bar li {
+	flex: 1;
+	display: block;
+}
+
+ul#nav-bar li a {
+	display: block;
+	padding: 5px 0;
+	border: var(--theme-border);
+	text-decoration: none;
+	text-align: center;
+}
+
+ul#nav-bar li a:hover {
+	background: var(--theme-color);
+	color: black;
+}
+
+/* Language Buttons */
+div#lang-buttons {
+	margin: 55px 0 0 5px;
+	line-height: 22px;
+	flex-shrink: 0;
+}
+
+div#lang-buttons img {
+	width: 25px;
+	height: 15px;
+	border: 1px solid black;
+}
+
+/* Special Components */
+div.note {
+	background-color: var(--note-bg);
+	border-left: 4px solid var(--theme-color);
+	padding: 1px 15px;
+}
+
+.img-container a:link,
+.img-container a:visited,
+.img-container a:hover {
+	text-decoration: none;
+	color: white;
+}
+
+.img-container img {
+	max-width: 100%;
+	height: auto;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 680px) {
+	div#outer-page {
+		max-width: 100%;
+		padding: 0 10px;
+	}
+
+	div#page {
+		max-width: 100%;
+	}
+
+	div#header img {
+		width: 100%;
+		max-width: 750px;
+	}
+
+	ul#nav-bar {
+		max-width: 100%;
+	}
+
+	div#content {
+		padding: 15px;
+	}
+
+	div#footer {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	div#copyright {
+		text-align: center;
+		height: auto;
+	}
+
+	div#sf-logo {
+		text-align: center;
+	}
+}
+
+@media screen and (max-width: 400px) {
+	ul#nav-bar {
+		flex-wrap: wrap;
+	}
+
+	ul#nav-bar li {
+		flex: 1 1 45%;
+	}
+
+	div#content {
+		padding: 10px;
+	}
+}

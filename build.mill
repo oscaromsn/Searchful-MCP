@@ -1,0 +1,60 @@
+//| mill-version: 1.1.0-RC3
+
+import mill._
+import mill.javalib._
+
+object `package` extends JavaModule { outer =>
+	def mainClass = Some("net.sourceforge.docfetcher.Main")
+
+	def lib = Task.Source("lib")
+
+	override def unmanagedClasspath = Task {
+		val libDir = lib().path
+
+		if (!os.exists(libDir)) {
+			Seq()
+		} else {
+			// Detect current platform
+			val osName = System.getProperty("os.name").toLowerCase
+			val (swtPlatform, bindingPlatform) =
+				if (osName.contains("win")) ("win32-win32", "Windows-")
+				else if (osName.contains("mac") || osName.contains("darwin")) ("cocoa-macosx", "Mac-")
+				else ("gtk-linux", "Linux-")
+
+			// Define platform patterns to exclude (all platforms except current)
+			val allPlatforms = Seq("win32-win32", "cocoa-macosx", "gtk-linux", "Windows-", "Mac-", "Linux-")
+			val otherPlatforms = allPlatforms.filterNot(p => p == swtPlatform || p == bindingPlatform)
+
+			// Recursively collect all JARs from lib directory and subdirectories
+			val libJars = os.walk(libDir)
+				.filter(_.ext == "jar")
+				.filterNot(_.last.endsWith("-sources.jar"))
+				.filter(path => !otherPlatforms.exists(path.last.contains))
+				.map(PathRef(_))
+
+			Seq.from(libJars)
+		}
+	}
+
+	override def javacOptions = Seq(
+		"-source", "21",
+		"-target", "21",
+		"-encoding", "UTF-8",
+		"-Xlint:deprecation",
+		"-Xlint:unchecked",
+		"-proc:none" // Disable compiler warning about annotation processing
+	)
+
+	object mcpServer extends JavaModule {
+		override def moduleDeps = Seq(outer)
+
+		override def mainClass = Some("net.sourceforge.docfetcher.mcp.McpServer")
+
+		override def javacOptions = Seq(
+			"-source", "21",
+			"-target", "21",
+			"-encoding", "UTF-8",
+			"-proc:none"
+		)
+	}
+}

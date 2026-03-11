@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Guida di DocFetcher - Raccolte di documenti portatili</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Topoldo" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ritorno alla pagina principale</a>
+		</div>
+		<div id="main">
+			<h1>Raccolte di documenti portatili</h1><h2>Modalità d'uso semplice</h2><p>La versione portatile di DocFetcher consente di portare con sé (e di ridistribuire) una raccolta di documenti completamente indicizzata e totatmente ricercabile. Qualora non si disponga della versione portatile la si può scaricare <a href="http://docfetcher.sourceforge.net">qui</a>.</p><p>La versione portatile non richiede alcuna procedura di installazione; è sufficiente estrarre il contenuto dell'archivio zip in una cartella a scelta. Successivamente si può eseguire DocFetcher attraverso il programma eseguibile specifico per il proprio sistema operativo: <code>DocFetcher.exe</code> (Windows), <code>DocFetcher.sh</code> (Linux) o l'app <code>DocFetcher</code> (Mac OS&nbsp;X). Il solo requisito è che sul computer sul quale si esegue DocFetcher sia contestualmente installata la versione <em>runtime</em> di Java 1.6 (o superiori).</p><p><u>Percorsi (path) relativi</u>: un elemento importante cui prestare attenzione per creare una raccolta di documenti portatili è che gli indici siano creati con l'opzione <em>Memorizzazione di percorsi relativi se possibile (favorisce la portatilità)</em> attivata. Senza di ciò, DocFetcher registrerà dei riferimenti <em>assoluti</em> ai file, per cui sarà sì possibile spostare in giro DocFetcher e i suoi indici, ma non i file &mdash; senza perderne, quanto meno, il riferimento. Ecco un esempio che illustra la differenza fra percorso relativo e assoluto:</p>
+<ul>
+  <li>Percorso relativo: <code>..\..\i-miei-file\qualche-documento.txt</code></li>
+  <li>Percorso assoluto: <code>C:\i-miei-file\qualche-documento.txt</code></li>
+</ul><p>Il percorso (o <em>path</em>) relativo dice sostanzialmente a DocFetcher che questi può trovare il file <code>qualche-documento.txt</code> spostandosi di 2 livelli a monte rispetto alla sua attuale posizione ed entrando successivamente nella cartella <code>i-miei-file</code>. Il percorso assoluto d'altro canto è invece un riferimento assoluto, indipendente dalla posizione di DocFetcher, per cui non è possibile spostare il file <code>qualche-documento.txt</code> (cfr. raccolte di documenti portatili) senza perderne anche i riferimenti. In sostanza DocFetcher non è più in grado di trovare dove è localizzato il file in questione.</p><p>Si noti che DocFetcher può solamente <em>tentare</em> di memorizzare i percorsi relativi. Ovviamente non è possibile farlo se DocFetcher e i file da indicizzare sono memorizzati in volumi differenti, per esempio DocFetcher in <code>D:\DocFetcher</code> e i file in <code>E:\i-miei-file</code>.</p><h2>Trucchi per un uso produttivo di DocFetcher</h2>
+<ul>
+  <li><strong><em>Archiviazione su CD-ROM</em></strong>: mettendo DocFetcher su CD-ROM, ovviamente non sarà possibile salvare eventuali modifiche alle preferenze o agli indici. Pertanto è necessario ricordarsi di configurare esattamente il programma secondo le proprie esigenze prima di creare il CD-ROM. Ricordarsi anche che potrebbe essere necessario includere una versione <em>runtime</em> di Java qualora questa non fosse installata nel computer su cui si intende usare il CD-ROM.</li>
+  <li><strong><em>Differenti titoli per il programma</em></strong>: per la ridistribuzione di una raccolta di documenti portatili o per consentire di lavorare con instanze multiple di DocFetcher senza che vi sia troppa confusione, è possibile fare in modo che ciascuna istanza, nella propria finestra, abbia titolo diverso. Per fare ciò bisogna fare clic sulla voce <code>Impostazioni avanzate</code> presente nella finestra delle <em>Preferenze</em> e modificare l'impostazione <code>Nome dell&#39;applicazione</code>.</li>
+</ul><h2>Avvertenze</h2>
+<ul>
+  <li><strong><em>Non toccare la cartella <code>indexes</code></em></strong>: è possibile, ma non è obbligatorio, mettere i propri file nella stessa cartella di DocFetcher. Se lo si fa, bisogna comunque ricordarsi di lasciare la sotto-cartella <code>indexes</code> a se stante, perché qualsiasi cosa venisse messa dentro a tale cartella potrebbe essere cancellata!</li>
+  <li><strong><em>Incompatibilità dei nomi di file</em></strong>: attenzione alla incompatibilità dei caratteri presenti nei nomi di file fra i diversi sistemi operativi. Per esempio in Linux i nomi dei file possono contenere caratteri quali ":" (due punti) o "|" (pipe); in Windows no. Conseguentemente si possono spostare delle raccolta di documenti da Linux a Windows o viceversa solo se i documenti di cui sono composte hanno nomi di file privi di caratteri incompatibili fra sistemi operativi. Per quanto riguarda invece caratteri particolari quali le <em>umlauts</em> tedesche o le lettere accentate italiane e francesi si tratta di un discorso completamente differente…</li>
+</ul>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Advanced_Usage">Ritorno alla pagina principale</a>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher手册 - 如何提高文件夹监视限制（Linux）</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="efeire" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Subpages">返回主页</a>
+		</div>
+		<div id="main">
+			<h1>如何提高文件夹监视限制（Linux）</h1><p>在Linux上，进程默认情况下最多可以监视8192个文件夹。如果索引非常深的文件夹层次结构，则可能会达到此限制。如果发生这种情况，DocFetcher可能会显示“设备上没有剩余空间”错误消息。你可以通过提高手表限制来解决这个问题。例如，此命令会暂时将监视限制提高到32000：</p>
+<pre><code>sudo echo 32000 &gt; /proc/sys/fs/inotify/max_user_watches
+</code></pre><p>要永久更改监视限制，请打开文件<code>/etc/sysctl.conf</code>（以root身份）并添加以下行：</p>
+<pre><code>fs.inotify.max_user_watches=32000
+</code></pre>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Subpages">返回主页</a>
+		</div>
+	</body>
+</html>

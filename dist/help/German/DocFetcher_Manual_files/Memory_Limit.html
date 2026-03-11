@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher Benutzerhandbuch - Erhöhung des Speicherlimits</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Tran Nam Quang" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Caveats">Zurück zur Hauptseite</a>
+		</div>
+		<div id="main">
+			<h1>Erhöhung des Speicherlimits</h1><p>Für DocFetcher besteht standardmäßig ein Speicherlimit von 256&nbsp;MB. Dies kann durch Modifikation der plattformspezifischen Startprogramme abgeändert werden.</p><h2>Windows</h2><p>In der Windows-Version von DocFetcher sind vorgefertigte alternative Startprogramme mitgeliefert, welche andere Speicherlimits setzen. Diese alternativen Startprogramme sind auf folgende Weise zu benutzen:</p>
+<ul>
+  <li>Öffnen Sie den DocFetcher-Ordner. Falls Sie die portable Version von DocFetcher verwenden, ist dies einfach der Ordner, den Sie heruntergeladen und entpackt haben. Falls Sie die nicht-portable Version benutzen, sollte sich DocFetcher in <code>C:\Program Files</code>, <code>C:\Program Files (x86)</code> oder an einem ähnlichen Ort befinden.</li>
+  <li>Die alternativen Startprogramme befinden sich im Ordner <code>DocFetcher\misc</code>. Sie weisen alle einen Dateinamen <code>DocFetcher-XXX.exe</code> auf, wobei das <code>XXX</code> für das Speicherlimit des jeweiligen Startprogramms steht. Das Startprogramm <code>DocFetcher-512.exe</code> bspw. setzt ein Speicherlimit von 512&nbsp;MB.</li>
+  <li>Vor Gebrauch eines der Startprogramme <strong>müssen Sie es zuerst in den DocFetcher-Ordner darüber verschieben oder kopieren</strong>. Es ist nicht notwendig, das normale Startprogramm zu löschen oder das alternative Startprogramm umzubenennen.</li>
+</ul><p>Ein weiterer Weg, das Speicherlimit zu ändern, besteht darin, die Datei <code>misc\DocFetcher.bat</code> in den DocFetcher-Ordner zu kopieren und den Ausdruck <code>-Xmx256m</code> in der letzten Zeile der Datei umzuändern, z.&nbsp;B. zu <code>-Xmx512m</code>.</p><h2>Linux</h2><p>Öffnen Sie das Startskript <code>DocFetcher/DocFetcher.sh</code> mit einem Text-Editor und ändern Sie in der letzten Zeile den Ausdruck <code>-Xmx256m</code> entsprechend ab, bspw. zu <code>-Xmx512m</code>.</p><h2>Mac OS&nbsp;X</h2><p>Unter Mac OS&nbsp;X wird das Speicherlimit über eine Datei namens <code>memory-limit.txt</code> konfiguriert. Der Speicherort dieser Datei hängt von der verwendeten Version ab:</p>
+<ul>
+  <li><strong>Portable Version</strong>: Öffnen Sie im DocFetcher-Ordner die Datei <code>conf/memory-limit.txt</code> mit einem Text-Editor.</li>
+  <li><strong>Nicht-portable Version</strong>: Öffnen Sie in Ihrem Home-Verzeichnis die Datei <code>.docfetcher/conf/memory-limit.txt</code> mit einem Text-Editor. Ordner, die mit einem Punkt beginnen, sind im Finder standardmäßig ausgeblendet. Um versteckte Dateien anzuzeigen, drücken Sie <code>Cmd+Shift+.</code> (Befehl+Umschalt+Punkt) im Finder, oder verwenden Sie das Terminal, um zur Datei zu navigieren.</li>
+</ul><p>Falls die Datei noch nicht existiert, starten Sie DocFetcher einmal, um sie automatisch zu erstellen. Nach dem Öffnen der Datei:</p>
+<ul>
+  <li>Sie sehen einen Wert wie <code>4g</code> unter einigen Kommentarzeilen. Ändern Sie diesen auf das gewünschte Speicherlimit, z.&nbsp;B. zu <code>8g</code> für 8&nbsp;GB RAM.</li>
+  <li>Speichern und schließen Sie die Datei, schließen Sie dann das Programm, falls es noch geöffnet ist, und starten Sie das Programm neu.</li>
+</ul>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Caveats">Zurück zur Hauptseite</a>
+		</div>
+	</body>
+</html>

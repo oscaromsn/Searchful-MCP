@@ -1,0 +1,23 @@
+/bin/
+/build/
+/out/
+/subprojects/macos-launcher/target/
+/website/output/
+/website/.venv/
+/.bsp/
+/.idea/
+/.metals/
+/.vscode/
+
+/build-jre.txt
+/code-signing-macos.txt
+/code-signing-windows.txt
+/dev/bugfixes
+/.project
+
+.settings/
+*.DS_Store
+__pycache__/
+
+# MCP server built JAR (rebuild with ./mcpServer/build-jar.sh)
+/mcpServer/docfetcher-mcp.jar

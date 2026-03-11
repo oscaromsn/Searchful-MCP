@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>DocFetcher Kılavuzu - Klasör izleme sınırı nasıl yükseltilir (Linux)</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Osman Öz" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Subpages">Ana sayfaya dön</a>
+		</div>
+		<div id="main">
+			<h1>Klasör izleme sınırı nasıl yükseltilir (Linux)</h1><p>Linux'ta işlemler varsayılan olarak en fazla 8192 klasör izleyebilir. Çok derin bir klasör hiyerarşisini dizinlerseniz bu sınıra ulaşabilirsiniz. Böyle bir durumda, DocFetcher muhtemelen "Cihazda yer kalmadı" hata mesajı gösterecektir. İzleme sınırını artırarak bu sorunu çözebilirsiniz. Örneğin, bu komut geçici olarak saat sınırını 32000'e çıkaracaktır:</p>
+<pre><code>sudo echo 32000 &gt; /proc/sys/fs/inotify/max_user_watches
+</code></pre><p>İzleme sınırını kalıcı olarak değiştirmek için <code>/etc/sysctl.conf</code> dosyasını (kök olarak) açın ve aşağıdaki satırı ekleyin:</p>
+<pre><code>fs.inotify.max_user_watches=32000
+</code></pre>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Subpages">Ana sayfaya dön</a>
+		</div>
+	</body>
+</html>

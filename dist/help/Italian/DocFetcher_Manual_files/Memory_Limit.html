@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Guida di DocFetcher - Come aumentare la quantità di memoria</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Topoldo" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Caveats">Ritorno alla pagina principale</a>
+		</div>
+		<div id="main">
+			<h1>Come aumentare la quantità di memoria disponibile</h1><p>DocFetcher ha un limite prefissato di memoria disponibile di 256&nbsp;MB. Esso viene impostato all'avvio del programma. Può venire aumentato giocando con i diversi programmi di avvio che vengono forniti con DocFetcher e che sono sistema operativo-specifici.</p><h2>Windows</h2><p>La versione di DocFetcher per Microsoft Windows è dotata di svariati programmi di avvio tra loro alternativi e già pronti all'uso i quali utilizzano diverse dimensioni di <em>heap</em>. Per il loro uso si consiglia di seguire le indicazioni sottostanti.</p>
+<ul>
+  <li>Aprire la cartella di DocFetcher. Se si sta usando la versione portatile di DocFetcher, si tratta della cartella in cui è stato spacchettato il contenuto del file zip scaricato. Se invece si sta usando la versione non portatile, la cartella DocFetcher è presente in <code>C:\Program Files</code> o in <code>C:\Program Files (x86)</code> o in una cartella avente nome simile.</li>
+  <li>I programmi di avvio di DocFetcher sono presenti nella sotto-cartella <code>DocFetcher\misc</code> e hanno nome <code>DocFetcher-XXX.exe</code> (ove <code>XXX</code> rappresenta la dimensione dell'<em>heap</em> impostata nel rispettivo programma di avvio). Per esempio il programma di avvio <code>DocFetcher-512.exe</code> imposta una dimensione dell'<em>heap</em> di 512&nbsp;MB.</li>
+  <li>Prima di usare uno qualsiasi di questi programmi di avvio <strong>è necessario innanzitutto spostarlo o copiarlo nella cartella principale di DocFetcher</strong>. Non è però necessario cancellare il programma di avvio predefinito o rinominare il programma di avvio alternativo.</li>
+</ul><p>Un altro modo per modificare il limite di memoria prefissato è copiare il file <code>misc\DocFetcher.bat</code> nella cartella principale di DocFetcher e modificare l'espressione <code>-Xmx256m</code> presente nell'ultima riga di tale file, per esempio cambiandola in <code>-Xmx512m</code></p><h2>Linux</h2><p>In questo caso bisogna aprire con un editor di testo lo script di avvio del programma (cioè <code>DocFetcher/DocFetcher.sh</code>) e modificare, secondo necessità, l'espressione <code>-Xmx256m</code> presente nell'ultima riga. Per esempio: <code>-Xmx512m</code></p><h2>Mac OS&nbsp;X</h2><p>Entrambe le versioni di DocFetcher (portatile e non-portatile) vengono lanciate tramite una <em>app</em> che viene fornita assieme al programma. Nella versione non portatile l'<em>app</em> "collegata" è quella che viene fornita assieme all'immagine-disco (<em>dmg</em>). Nella versione portatile invece, l'app collegata si trova nella cartella DocFetcher.</p><p>In entrambi i casi, l'<em>app</em> fornita a corredo è una cartella con estensione <code>.app</code>. In Finder dovrebbe essere disponibile una voce del menu contestuale per aprire questa cartella. Se la lingua di sistema del Mac OS&nbsp;X è l'inglese, questa voce di menu è <code>Show Package Contents</code>.</p><p>All'interno di tale cartella si trova anche lo script di avvio: <code>Contents/MacOS/DocFetcher</code>. Bisogna aprirlo con un editor di testo e modificare, secondo necessità, l'espressione <code>-Xmx256m</code> presente nell'ultima riga. Per esempio: <code>-Xmx512m</code></p>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Caveats">Ritorno alla pagina principale</a>
+		</div>
+	</body>
+</html>

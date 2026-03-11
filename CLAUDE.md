@@ -1,0 +1,7 @@
+- This is a Java/SWT project.
+- The Mill build file is here: ./build.mill
+- Compile the sources with: ./mill compile
+- The printed output of the build system may be very long, so do NOT read it directly. *Always* save it to a temporary file for further analysis via 'head', 'tail', 'grep' or similar tools.
+- If there are compilation errors buried deep in the build output, you can find them like this: grep "\[error\]"
+- Similarly, you can find warnings in the build output like this: grep "\[warn\]"
+- Mill compiles incrementally, so if you compile two times in a row, you may not see compiler warnings the second time. To see all compiler warnings, use this: ./mill clean && ./mill compile &> /tmp/build-output-001.txt

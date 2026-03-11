@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Guida di DocFetcher - Come aumentare i limiti di sorveglianza delle cartelle (Linux)</title>
+		<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+		<meta content="Topoldo" name="author">
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div class="header">
+			<a href="../DocFetcher_Manual.html#Subpages">Ritorno alla pagina principale</a>
+		</div>
+		<div id="main">
+			<h1>Come aumentare i limiti di sorveglianza delle cartelle (Linux)</h1><p>In Linux, i processi possono <em>sorvegliare</em> un massimo di 8192 cartelle. Questo limite potrebbe essere raggiunto se si indicizzassero delle cartelle fra loro altamente nidificate. Se questo limite viene superato, DocFetcher fa comparire il messaggio di errore: <em>No space left on device</em>. È possibile aggirare questo problema innalzando i limiti di sorveglianza delle cartelle. Per esempio il comando sotto riportato innalza temporaneamente tale limite a 32000 cartelle:</p>
+<pre><code>sudo echo 32000 &gt; /proc/sys/fs/inotify/max_user_watches
+</code></pre><p>Per modificare in maniera definitiva il limite di sorveglianza delle cartelle, bisogna aprire (come utente <code>root</code>) il file <code>/etc/sysctl.conf</code>, aggiungervi la riga sotto riportata e salvare il file.</p>
+<pre><code>fs.inotify.max_user_watches=32000
+</code></pre>
+		</div>
+		<div class="footer">
+			<a href="../DocFetcher_Manual.html#Subpages">Ritorno alla pagina principale</a>
+		</div>
+	</body>
+</html>
