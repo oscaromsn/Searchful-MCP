@@ -4,97 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Searchful-MCP is a fork of DocFetcher (open-source desktop full-text search app) enhanced with an MCP (Model Context Protocol) server. The MCP server exposes DocFetcher's Lucene-based search capabilities to LLMs over JSON-RPC 2.0 via stdio. The main DocFetcher codebase is a Java/SWT application; the MCP server runs headlessly without any SWT dependency.
+This is **Searchful-MCP**, a fork of DocFetcher (a desktop document search application) extended with an MCP (Model Context Protocol) server. The project has two main components:
+
+1. **DocFetcher core** — A Java/SWT desktop application that indexes and searches documents using Apache Lucene. It supports PDF, Office docs, email (Outlook PST), HTML, RTF, OpenOffice, ebooks, and plain text.
+2. **MCP server** — A headless JSON-RPC 2.0 server (over stdio) that exposes DocFetcher's Lucene indexes to LLM tools via MCP. It provides three tools: `search`, `get_document_content`, and `list_indexes`.
 
 ## Build System
 
-**Mill 1.1.0-RC3** (Scala-based build tool). Java 21 required.
+This is a Java/SWT project using [Mill](https://mill-build.org/) for compilation. JARs are managed as unmanaged dependencies in the `lib/` directory (not Maven/Gradle).
 
+- **Mill build file:** `build.mill`
+- **Java version:** 21
+- **Incremental compile:** `./mill compile`
+- **Clean + compile:** `./mill clean && ./mill compile`
+- **Compile MCP server module:** `./mill mcpServer.compile`
+
+**Important:** Build output can be very long. Always redirect to a file and inspect with grep:
 ```bash
-# Compile everything (incremental)
-./mill compile
-
-# Compile only the MCP server submodule
-./mill mcpServer.compile
-
-# Clean build (to see all warnings)
-./mill clean && ./mill compile
+./mill clean && ./mill compile &> /tmp/build-output.txt
+grep "\[error\]" /tmp/build-output.txt
+grep "\[warn\]" /tmp/build-output.txt
 ```
 
-**Important:** Build output can be very long. Always redirect to a file for analysis:
-```bash
-./mill compile &> /tmp/build-output.txt
-grep "\[error\]" /tmp/build-output.txt   # find errors
-grep "\[warn\]" /tmp/build-output.txt    # find warnings
-```
+Mill compiles incrementally — to see all warnings, you must clean first.
 
-Mill compiles incrementally — compiling twice in a row may not show warnings the second time. Use `./mill clean && ./mill compile` to see all warnings.
+The `build.py` script produces release artifacts (bundled JREs, installers). Mill is only for fast incremental compilation during development.
 
-## Running
+## Module Structure
 
-```bash
-# MCP server via launch script (dev)
-./mcpServer/run.sh --indexes /path/to/indexes
+The Mill build defines two modules in `build.mill`:
 
-# MCP server via fat JAR (distribution)
-./mcpServer/build-jar.sh
-java -jar mcpServer/docfetcher-mcp.jar --indexes /path/to/indexes
+- **Root module (`package`)** — The DocFetcher core. Entry point: `net.sourceforge.docfetcher.Main` → `gui.Application`.
+- **`mcpServer`** — The MCP server. Depends on the root module. Entry point: `net.sourceforge.docfetcher.mcp.McpServer`. Launched with `--indexes <path>`.
 
-# DocFetcher desktop app (requires platform-specific SWT setup)
-# Main class: net.sourceforge.docfetcher.gui.Application
-# See readme.txt for IntelliJ IDEA configuration
-```
+## Source Layout
 
-## Testing
+- `src/` — DocFetcher core sources under `net.sourceforge.docfetcher`
+  - `gui/` — SWT UI (Application, SearchBar, ResultPanel, filters, preview, indexing dialogs)
+  - `model/` — Core domain: `Document`, `LuceneIndex`, `IndexRegistry`, `Folder`/`TreeNode` hierarchy
+  - `model/index/` — Indexing pipeline: `IndexingConfig`, `IndexingQueue`, file/Outlook indexers
+  - `model/search/` — Search: `Searcher`, `HighlightService`, `PhraseDetectingQueryParser`
+  - `model/parse/` — File parsers: PDF, Office, HTML, RTF, ebook, etc. via `ParseService`
+  - `enums/` — Config classes: `ProgramConf`, `SettingsConf`, `SystemConf`, message enums
+  - `util/` — Utilities, GUI helpers, concurrency
+- `mcpServer/src/` — MCP server sources under `net.sourceforge.docfetcher.mcp`
+  - `McpServer.java` — JSON-RPC message loop and MCP protocol handling
+  - `IndexManager.java` — Discovers/loads Lucene indexes, executes searches
+  - `ContentExtractor.java` — Extracts and highlights document text for `get_document_content`
+- `lib/` — Bundled JARs (Lucene, SWT, Tika, POI, PDFBox, Jackson, etc.). Platform-specific SWT JARs are filtered by the build.
+- `dist/` — Distribution resources (launcher scripts, lang files)
+- `subprojects/` — Rust subproject (macOS launcher)
+- `src-daemon/` — Daemon process sources
 
-```bash
-# Create a sample index with 5 test documents, then query it
-./mill mcpServer.compile
-CP=$(./mill show mcpServer.runClasspath 2>/dev/null \
-  | tr -d '[]"' | tr ',' '\n' | grep "ref:" \
-  | sed 's|.*ref:v0:[^:]*:||' | tr '\n' ':')
-java -cp "$CP" net.sourceforge.docfetcher.mcp.TestIndexCreator /tmp/test-indexes
+## Key Architectural Details
 
-# Send JSON-RPC messages via stdin
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search","arguments":{"query":"machine learning"}}}' \
-  | ./mcpServer/run.sh --indexes /tmp/test-indexes
-```
-
-No JUnit/TestNG framework is currently configured. Some test utility classes exist in `src/` (e.g., `UtilTest`, `PathTest`).
-
-## Architecture
-
-### Two-Module Mill Build
-
-The `build.mill` defines two modules:
-- **Root module** (`package`) — the DocFetcher desktop app. Main class: `net.sourceforge.docfetcher.Main`. Depends on SWT and all JARs in `lib/`.
-- **`mcpServer`** — nested submodule depending on the root module. Main class: `net.sourceforge.docfetcher.mcp.McpServer`. Reuses model/parsing classes but never touches SWT at runtime.
-
-### MCP Server (`mcpServer/src/.../mcp/`)
-
-Three classes implement the full MCP server:
-
-- **`McpServer.java`** — Stdio loop reading JSON-RPC 2.0 messages. Handles MCP protocol lifecycle (`initialize`, `tools/list`, `tools/call`). Dispatches to IndexManager and ContentExtractor.
-- **`IndexManager.java`** — Discovers Lucene indexes on disk, opens `DirectoryReader`s, combines them via `DecoratedMultiReader`. Runs searches using `PhraseDetectingQueryParser` with filters (size, file type) composed as `BooleanQuery` clauses. Extracts stored field metadata from results.
-- **`ContentExtractor.java`** — Re-parses files on demand since content is not stored in the Lucene index (the `CONTENT` field uses `TextField.TYPE_NOT_STORED`). Uses DocFetcher's `ParseService` for format-specific extraction. Falls back to plain text. Uses Lucene `Highlighter` for snippet extraction with `>>markers<<`.
-
-Three MCP tools are exposed: `search`, `get_document_content`, `list_indexes`.
-
-### DocFetcher Core (`src/net/sourceforge/docfetcher/`)
-
-- **`model/`** — Core business logic (~124 Java files). Key types: `LuceneIndex` (interface), `Fields` (Lucene field definitions enum), plus `index/`, `parse/`, and `search/` subpackages.
-- **`gui/`** — SWT desktop UI. Entry point: `Application.java`.
-- **`util/`** — Collections, concurrency, GUI helpers.
-- **`enums/`** — Configuration enums.
-
-### Key Design Decisions
-
-- **Content not stored in index.** `get_document_content` must re-parse the original file from disk each time.
-- **Read-only index access.** Lucene supports concurrent readers, so the MCP server can run alongside the DocFetcher GUI.
-- **Analyzer compatibility.** Server defaults to `StandardAnalyzer` with empty stop-word set, matching DocFetcher's default. Mismatched analyzers will cause search failures.
-- **Platform-specific JARs.** The build auto-detects the OS and selects the correct SWT JAR from `lib/swt/`.
-
-### Dependencies
-
-All dependencies are vendored JARs in `lib/`. Key libraries: Lucene 6.6.3, SWT, Tika, Jackson (JSON for MCP), PDFBox, Apache POI, JNA, Commons.
+- **Lucene version:** Uses a legacy/custom Lucene build (in `lib/lucene/`), not a standard Maven artifact. Includes `LegacyNumericRangeQuery` and custom `DecoratedMultiReader`.
+- **SWT dependency:** Platform-specific. The build auto-detects the OS and selects the correct SWT JAR from `lib/swt/`. For IntelliJ, a `SWT_JAR` path variable must be configured (see `readme.txt`).
+- **Index format:** Each index is a directory containing Lucene index files plus `tree-index.ser` (serialized `LuceneIndex` metadata) and optionally `index-name.txt`.
+- **Document UIDs:** Stored as `file:///path/to/file` or `outlook:///path/to/pst/entry`. The MCP server's `IndexManager.extractPathFromUid()` strips the scheme prefix.
+- **MCP server is headless** — it does not use SWT or any GUI code. It reads indexes directly via Lucene APIs and reuses core model/parse/search classes.
