@@ -16,11 +16,11 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.FSDirectory;
 
@@ -34,7 +34,10 @@ import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Manages DocFetcher Lucene indexes: discovery, loading, and searching.
@@ -153,13 +156,28 @@ public class IndexManager {
 	}
 
 	/**
-	 * Search across all loaded indexes.
+	 * Search across all loaded indexes with pagination.
+	 *
+	 * @param queryStr Lucene query string
+	 * @param page 1-indexed page number
+	 * @param pageSize results per page
+	 * @param fileTypes optional file extension filter
+	 * @param minSizeKb optional minimum size filter
+	 * @param maxSizeKb optional maximum size filter
 	 */
-	public List<SearchResult> search(
-			String queryStr, int maxResults,
-			List<String> fileTypes, Long minSizeKb, Long maxSizeKb) throws Exception {
+	public PaginatedSearchResult search(
+			String queryStr, int page, int pageSize,
+			List<String> fileTypes, Long minSizeKb, Long maxSizeKb,
+			List<String> scope) throws Exception {
+		PaginatedSearchResult psr = new PaginatedSearchResult();
+		psr.page = page;
+		psr.pageSize = pageSize;
+
 		if (searcher == null) {
-			return List.of();
+			psr.results = List.of();
+			psr.totalHits = 0;
+			psr.totalPages = 0;
+			return psr;
 		}
 
 		// Normalize smart quotes
@@ -172,6 +190,7 @@ public class IndexManager {
 		parser.setAllowLeadingWildcard(true);
 		parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 		Query query = parser.parse(queryStr);
+		psr.parsedQuery = query;
 
 		// Build composite query with filters
 		BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
@@ -198,31 +217,61 @@ public class IndexManager {
 			bqBuilder.add(typeBuilder.build(), BooleanClause.Occur.FILTER);
 		}
 
+		// Scope filter (restrict to specific directories by UID prefix)
+		if (scope != null && !scope.isEmpty()) {
+			BooleanQuery.Builder scopeBuilder = new BooleanQuery.Builder();
+			for (String dir : scope) {
+				String prefix = dir.endsWith("/") || dir.endsWith("\\") ? dir : dir + "/";
+				scopeBuilder.add(
+					new PrefixQuery(new Term(Fields.UID.key(), "file://" + prefix)),
+					BooleanClause.Occur.SHOULD);
+				scopeBuilder.add(
+					new PrefixQuery(new Term(Fields.UID.key(), "outlook://" + prefix)),
+					BooleanClause.Occur.SHOULD);
+			}
+			bqBuilder.add(scopeBuilder.build(), BooleanClause.Occur.FILTER);
+		}
+
 		BooleanQuery finalQuery = bqBuilder.build();
 
-		// Execute search
-		TopDocs topDocs = searcher.search(finalQuery, maxResults);
+		// Fetch extra results to account for deduplication
+		int topN = page * pageSize * 3;
+		TopDocs topDocs = searcher.search(finalQuery, topN);
 
-		// Convert results
+		psr.totalHits = (int) topDocs.totalHits;
+
+		// Build results with deduplication (skip docs with same filename+size)
+		Set<String> seen = new LinkedHashSet<>();
 		List<SearchResult> results = new ArrayList<>();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		float maxScore = topDocs.getMaxScore();
+		int uniqueCount = 0;
+		int targetStart = (page - 1) * pageSize;
 
-		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+		for (int i = 0; i < topDocs.scoreDocs.length && results.size() < pageSize; i++) {
+			ScoreDoc scoreDoc = topDocs.scoreDocs[i];
 			Document doc = searcher.doc(scoreDoc.doc);
-			SearchResult result = new SearchResult();
 
+			String filename = doc.get(Fields.FILENAME.key());
+			String sizeStr = doc.get(Fields.SIZE.key());
+			String dedupKey = (filename != null ? filename : "") + "|" + (sizeStr != null ? sizeStr : "");
+
+			if (!seen.add(dedupKey)) continue; // skip duplicate
+			uniqueCount++;
+
+			if (uniqueCount <= targetStart) continue; // skip to requested page
+
+			SearchResult result = new SearchResult();
 			result.uid = doc.get(Fields.UID.key());
-			result.filename = doc.get(Fields.FILENAME.key());
+			result.filename = filename != null ? filename : "";
 			result.type = doc.get(Fields.TYPE.key());
 			result.title = doc.get(Fields.TITLE.key());
 			result.authors = doc.get(Fields.AUTHOR.key());
+			result.parserName = doc.get(Fields.PARSER.key());
 
-			// Parse path from UID
 			result.path = extractPathFromUid(result.uid);
 			result.isEmail = result.uid != null && result.uid.startsWith("outlook://");
 
-			// Size
-			String sizeStr = doc.get(Fields.SIZE.key());
 			if (sizeStr != null) {
 				try {
 					result.sizeInKb = Long.parseLong(sizeStr) / 1024;
@@ -231,11 +280,8 @@ public class IndexManager {
 				}
 			}
 
-			// Score (normalize to 0-100)
-			float maxScore = topDocs.getMaxScore();
 			result.score = maxScore > 0 ? Math.round(scoreDoc.score / maxScore * 100) : 0;
 
-			// Last modified
 			String lastModStr = doc.get(Fields.LAST_MODIFIED.key());
 			if (lastModStr != null) {
 				try {
@@ -246,35 +292,40 @@ public class IndexManager {
 				} catch (NumberFormatException e) { /* ignore */ }
 			}
 
-			// Email-specific fields
 			if (result.isEmail) {
 				String subject = doc.get(Fields.SUBJECT.key());
-				if (subject != null && !subject.isEmpty()) {
-					result.title = subject;
-				}
+				if (subject != null && !subject.isEmpty()) result.title = subject;
 				String sender = doc.get(Fields.SENDER.key());
-				if (sender != null && !sender.isEmpty()) {
-					result.authors = sender;
-				}
+				if (sender != null && !sender.isEmpty()) result.authors = sender;
 				String dateStr = doc.get(Fields.DATE.key());
 				if (dateStr != null) {
 					try {
 						long millis = Long.parseLong(dateStr);
-						if (millis > 0) {
-							result.lastModified = dateFormat.format(new Date(millis));
-						}
+						if (millis > 0) result.lastModified = dateFormat.format(new Date(millis));
 					} catch (NumberFormatException e) { /* ignore */ }
 				}
 			}
 
-			if (result.filename == null) result.filename = "";
 			if (result.type == null) result.type = "";
 			if (result.path == null) result.path = "";
 
 			results.add(result);
 		}
 
-		return results;
+		// Approximate total pages based on dedup ratio observed
+		psr.totalPages = (uniqueCount + pageSize - 1) / pageSize;
+		if (topDocs.scoreDocs.length < topDocs.totalHits && uniqueCount > 0) {
+			// Estimate total unique from ratio seen so far
+			double dedupRatio = (double) uniqueCount / topDocs.scoreDocs.length;
+			int estimatedUnique = (int) (psr.totalHits * dedupRatio);
+			psr.totalPages = (estimatedUnique + pageSize - 1) / pageSize;
+			psr.totalHits = estimatedUnique;
+		} else {
+			psr.totalHits = uniqueCount;
+		}
+
+		psr.results = results;
+		return psr;
 	}
 
 	/**
@@ -334,8 +385,159 @@ public class IndexManager {
 		return analyzer;
 	}
 
+	public IndexSearcher getSearcher() {
+		return searcher;
+	}
+
 	public int getIndexCount() {
 		return loadedIndexes.size();
+	}
+
+	// --- Directory listing ---
+
+	private String cachedDirectoryTree = null;
+	private int cachedDirectoryDepth = -1;
+
+	/**
+	 * List directories in the index, formatted as an indented tree.
+	 * Results are cached since indexes don't change during a session.
+	 */
+	public String listDirectories(int depth) throws Exception {
+		if (cachedDirectoryTree != null && cachedDirectoryDepth == depth) {
+			return cachedDirectoryTree;
+		}
+
+		if (searcher == null) return "No indexes loaded.";
+
+		// Collect all unique parent directories from UIDs
+		Set<String> dirs = new TreeSet<>();
+		var reader = searcher.getIndexReader();
+		var uidFieldSet = java.util.Collections.singleton(Fields.UID.key());
+
+		for (int i = 0; i < reader.maxDoc(); i++) {
+			Document doc = reader.document(i, uidFieldSet);
+			String uid = doc.get(Fields.UID.key());
+			String path = extractPathFromUid(uid);
+			if (path == null) continue;
+			// Extract parent directory
+			int lastSep = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+			if (lastSep > 0) {
+				dirs.add(path.substring(0, lastSep).replace('\\', '/'));
+			}
+		}
+
+		if (dirs.isEmpty()) return "No directories found.";
+
+		// Group directories by root (first 2 path components, e.g. "C:/Users")
+		// Then find common prefix within each root group
+		// For simplicity: find common prefix across all dirs, if long enough use it;
+		// otherwise show full paths.
+		String root = findCommonPrefix(dirs);
+
+		StringBuilder sb = new StringBuilder();
+		Set<String> printed = new LinkedHashSet<>();
+
+		if (root.length() > 3) {
+			// Common root found
+			sb.append("Root: ").append(root).append("\n");
+			String rootPrefix = root.endsWith("/") ? root : root + "/";
+
+			for (String dir : dirs) {
+				String relative = dir.startsWith(rootPrefix)
+					? dir.substring(rootPrefix.length()) : dir;
+				if (relative.isEmpty()) continue;
+
+				String[] parts = relative.split("/");
+				int showDepth = Math.min(parts.length, depth);
+
+				for (int d = 0; d < showDepth; d++) {
+					StringBuilder pathBuilder = new StringBuilder();
+					for (int j = 0; j <= d; j++) {
+						if (j > 0) pathBuilder.append("/");
+						pathBuilder.append(parts[j]);
+					}
+					String partialPath = pathBuilder.toString();
+					if (printed.add(partialPath)) {
+						sb.append("  ".repeat(d + 1)).append(parts[d]).append("/\n");
+					}
+				}
+			}
+		} else {
+			// No single common root — group dirs by drive/prefix
+			// Find groups sharing a long common prefix
+			java.util.Map<String, Set<String>> groups = new java.util.LinkedHashMap<>();
+			for (String dir : dirs) {
+				// Group by first 2 components (e.g. "C:/Users" or "J:/01 - Clientes Ativos")
+				String[] parts = dir.split("/");
+				String groupKey = parts.length >= 2 ? parts[0] + "/" + parts[1] : parts[0];
+				groups.computeIfAbsent(groupKey, k -> new TreeSet<>()).add(dir);
+			}
+
+			for (var entry : groups.entrySet()) {
+				Set<String> groupDirs = entry.getValue();
+				String groupRoot = findCommonPrefix(groupDirs);
+				sb.append("\nRoot: ").append(groupRoot).append("\n");
+				String grPrefix = groupRoot.endsWith("/") ? groupRoot : groupRoot + "/";
+
+				for (String dir : groupDirs) {
+					String relative = dir.startsWith(grPrefix)
+						? dir.substring(grPrefix.length()) : dir;
+					if (relative.isEmpty()) continue;
+
+					String[] parts = relative.split("/");
+					int showDepth = Math.min(parts.length, depth);
+
+					for (int d = 0; d < showDepth; d++) {
+						StringBuilder pathBuilder = new StringBuilder();
+						for (int j = 0; j <= d; j++) {
+							if (j > 0) pathBuilder.append("/");
+							pathBuilder.append(parts[j]);
+						}
+						String partialPath = groupRoot + "/" + pathBuilder;
+						if (printed.add(partialPath)) {
+							sb.append("  ".repeat(d + 1)).append(parts[d]).append("/\n");
+						}
+					}
+				}
+			}
+		}
+
+		cachedDirectoryTree = sb.toString().stripTrailing();
+		cachedDirectoryDepth = depth;
+		return cachedDirectoryTree;
+	}
+
+	private String findCommonPrefix(Set<String> paths) {
+		String first = paths.iterator().next();
+		String prefix = first;
+		for (String path : paths) {
+			while (!path.startsWith(prefix)) {
+				int lastSep = prefix.lastIndexOf('/');
+				if (lastSep <= 0) return "";
+				prefix = prefix.substring(0, lastSep);
+			}
+		}
+		return prefix;
+	}
+
+	/**
+	 * Resolve a file path, translating Windows paths to WSL paths if needed.
+	 * E.g., "C:/Users/foo" → "/mnt/c/Users/foo" when running on WSL/Linux.
+	 */
+	public static File resolveFile(String path) {
+		File file = new File(path);
+		if (file.exists()) return file;
+
+		// Try WSL translation: "C:/path" or "C:\path" → "/mnt/c/path"
+		if (path.length() >= 2 && Character.isLetter(path.charAt(0))
+				&& (path.charAt(1) == ':')) {
+			String driveLetter = path.substring(0, 1).toLowerCase();
+			String rest = path.substring(2).replace('\\', '/');
+			File wslFile = new File("/mnt/" + driveLetter + rest);
+			if (wslFile.exists()) return wslFile;
+		}
+
+		return file; // return original even if not found
 	}
 
 	// --- Internal helpers ---
@@ -392,6 +594,20 @@ public class IndexManager {
 		public int score;
 		public String lastModified;
 		public boolean isEmail;
+		public String parserName;
+		// Populated by SnippetGenerator
+		public String excerpt;
+		public Integer pageNumber;
+		public Integer pageCount;
+	}
+
+	public static class PaginatedSearchResult {
+		public List<SearchResult> results;
+		public int totalHits;
+		public int page;
+		public int totalPages;
+		public int pageSize;
+		public Query parsedQuery;
 	}
 
 	public static class IndexInfo {

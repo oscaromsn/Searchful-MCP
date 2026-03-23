@@ -24,6 +24,7 @@ public class McpServer {
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static IndexManager indexManager;
 	private static ContentExtractor contentExtractor;
+	private static SnippetGenerator snippetGenerator;
 
 	public static void main(String[] args) throws Exception {
 		String indexesPath = null;
@@ -51,6 +52,7 @@ public class McpServer {
 		indexManager = new IndexManager(indexesDir);
 		int count = indexManager.loadIndexes();
 		contentExtractor = new ContentExtractor(indexManager);
+		snippetGenerator = new SnippetGenerator(contentExtractor, indexManager.getAnalyzer());
 
 		System.err.println(SERVER_NAME + " v" + SERVER_VERSION + " started.");
 		System.err.println("Loaded " + count + " index(es) from " + indexesDir.getAbsolutePath());
@@ -126,6 +128,7 @@ public class McpServer {
 		tools.add(buildSearchToolDef());
 		tools.add(buildGetDocumentContentToolDef());
 		tools.add(buildListIndexesToolDef());
+		tools.add(buildListDirectoriesToolDef());
 
 		result.set("tools", tools);
 		return result;
@@ -140,6 +143,7 @@ public class McpServer {
 				case "search" -> executeSearch(arguments);
 				case "get_document_content" -> executeGetDocumentContent(arguments);
 				case "list_indexes" -> executeListIndexes(arguments);
+				case "list_directories" -> executeListDirectories(arguments);
 				default -> throw new McpException(-32602, "Unknown tool: " + toolName);
 			};
 
@@ -174,8 +178,9 @@ public class McpServer {
 			throw new McpException(-32602, "Missing required parameter: query");
 		}
 
-		int maxResults = args.path("max_results").asInt(20);
-		maxResults = Math.min(Math.max(maxResults, 1), 100);
+		int page = args.path("page").asInt(1);
+		page = Math.min(Math.max(page, 1), 100);
+		int pageSize = 10;
 
 		Long minSizeKb = args.has("min_size_kb") ? args.get("min_size_kb").asLong() : null;
 		Long maxSizeKb = args.has("max_size_kb") ? args.get("max_size_kb").asLong() : null;
@@ -188,25 +193,79 @@ public class McpServer {
 			}
 		}
 
-		List<IndexManager.SearchResult> results = indexManager.search(
-			query, maxResults, fileTypes, minSizeKb, maxSizeKb);
-
-		ArrayNode jsonResults = mapper.createArrayNode();
-		for (IndexManager.SearchResult r : results) {
-			ObjectNode obj = mapper.createObjectNode();
-			obj.put("uid", r.uid);
-			obj.put("filename", r.filename);
-			obj.put("path", r.path);
-			if (r.title != null && !r.title.isEmpty()) obj.put("title", r.title);
-			if (r.authors != null && !r.authors.isEmpty()) obj.put("authors", r.authors);
-			obj.put("type", r.type);
-			obj.put("size_kb", r.sizeInKb);
-			obj.put("score", r.score);
-			if (r.lastModified != null) obj.put("last_modified", r.lastModified);
-			obj.put("is_email", r.isEmail);
-			jsonResults.add(obj);
+		List<String> scope = null;
+		if (args.has("scope") && args.get("scope").isArray()) {
+			scope = new java.util.ArrayList<>();
+			for (JsonNode s : args.get("scope")) {
+				scope.add(s.asText());
+			}
 		}
-		return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResults);
+
+		IndexManager.PaginatedSearchResult psr = indexManager.search(
+			query, page, pageSize, fileTypes, minSizeKb, maxSizeKb, scope);
+
+		// Enrich results with excerpts and page numbers
+		snippetGenerator.enrichResults(psr.results, psr.parsedQuery);
+
+		// Determine scope prefix for relative paths
+		String scopePrefix = null;
+		if (scope != null && scope.size() == 1) {
+			scopePrefix = scope.get(0);
+			if (!scopePrefix.endsWith("/") && !scopePrefix.endsWith("\\")) {
+				scopePrefix += "/";
+			}
+		}
+
+		// Format as compact text
+		StringBuilder sb = new StringBuilder();
+		sb.append("Found ~").append(psr.totalHits).append(" results");
+		sb.append(" (page ").append(psr.page).append("/").append(psr.totalPages).append(")\n");
+		if (scopePrefix != null) {
+			sb.append("Scope: ").append(scope.get(0)).append("\n");
+		}
+
+		int baseRank = (psr.page - 1) * psr.pageSize;
+		for (int i = 0; i < psr.results.size(); i++) {
+			IndexManager.SearchResult r = psr.results.get(i);
+			sb.append("\n[").append(baseRank + i + 1).append("] ");
+			sb.append(r.filename);
+			sb.append(" (score:").append(r.score);
+			sb.append(", ").append(r.sizeInKb).append("KB");
+			if (r.pageCount != null) sb.append(", ").append(r.pageCount).append("p");
+			sb.append(")\n");
+
+			// Show relative path when single scope is active
+			String displayPath = r.path;
+			if (scopePrefix != null && displayPath.startsWith(scopePrefix)) {
+				displayPath = displayPath.substring(scopePrefix.length());
+			}
+			sb.append("    ").append(displayPath).append("\n");
+
+			if (r.title != null && !r.title.isEmpty()
+					&& !r.title.equals(r.filename)
+					&& !r.title.equals(stripExtension(r.filename))) {
+				sb.append("    title: ").append(r.title).append("\n");
+			}
+			if (r.excerpt != null) {
+				sb.append("    ");
+				if (r.pageNumber != null) {
+					sb.append("[p.").append(r.pageNumber).append("] ");
+				}
+				sb.append(r.excerpt).append("\n");
+			}
+		}
+
+		if (psr.page < psr.totalPages) {
+			sb.append("\nPage ").append(psr.page).append("/").append(psr.totalPages);
+			sb.append(". Use search with page:").append(psr.page + 1).append(" to see more results.");
+		}
+
+		return sb.toString();
+	}
+
+	private static String stripExtension(String filename) {
+		int dot = filename.lastIndexOf('.');
+		return dot >= 0 ? filename.substring(0, dot) : filename;
 	}
 
 	private static String executeGetDocumentContent(JsonNode args) throws Exception {
@@ -215,10 +274,70 @@ public class McpServer {
 			throw new McpException(-32602, "Missing required parameter: path");
 		}
 
+		// Resolve relative paths using scope
+		String scopeDir = args.path("scope").asText(null);
+		if (scopeDir != null && !path.contains(":") && !path.startsWith("/")) {
+			String prefix = scopeDir.endsWith("/") || scopeDir.endsWith("\\") ? scopeDir : scopeDir + "/";
+			path = prefix + path;
+		}
+
 		String query = args.path("query").asText(null);
 		int maxChars = args.path("max_chars").asInt(5000);
 		maxChars = Math.min(Math.max(maxChars, 100), 100000);
 
+		// Check for page-range parameters
+		boolean hasStartPage = args.has("start_page") && !args.get("start_page").isNull();
+		boolean hasEndPage = args.has("end_page") && !args.get("end_page").isNull();
+
+		if (hasStartPage || hasEndPage) {
+			int startPage = hasStartPage ? args.get("start_page").asInt(1) : 1;
+			int endPage = hasEndPage ? args.get("end_page").asInt(startPage + 4) : startPage + 4;
+
+			ContentExtractor.PagedContent pc = contentExtractor.extractPages(
+				path, startPage, endPage, query, maxChars);
+
+			StringBuilder sb = new StringBuilder();
+			String filename = path.substring(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
+			sb.append("Document: ").append(filename);
+			if (pc.totalPages > 0) {
+				sb.append(" (").append(pc.totalPages).append(" pages, showing pages ");
+				sb.append(pc.startPage).append("-").append(pc.endPage).append(")\n\n");
+			} else {
+				sb.append("\n\n");
+			}
+			sb.append(pc.text);
+
+			if (pc.totalPages > 0 && pc.endPage < pc.totalPages) {
+				sb.append("\nUse get_document_content with start_page:")
+					.append(pc.endPage + 1).append(" to continue reading.");
+			}
+
+			return sb.toString();
+		}
+
+		// No page params — check for search-within-document mode (PDF + query)
+		if (query != null && !query.isBlank()) {
+			String ext = "";
+			int dotIdx = path.lastIndexOf('.');
+			if (dotIdx >= 0) ext = path.substring(dotIdx + 1).toLowerCase();
+
+			if ("pdf".equals(ext)) {
+				ContentExtractor.PageSearchResult psr =
+					contentExtractor.searchPages(path, query, maxChars, 10);
+
+				StringBuilder sb = new StringBuilder();
+				String filename = path.substring(
+					Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
+				sb.append("Document: ").append(filename);
+				sb.append(" (").append(psr.totalPages).append(" pages, ");
+				sb.append(psr.matchingPages).append(" with matches)\n\n");
+				sb.append(psr.text);
+				sb.append("\n\nUse get_document_content with start_page/end_page to read full page context.");
+				return sb.toString();
+			}
+		}
+
+		// Fallback: existing behavior (full text with optional highlighting)
 		return contentExtractor.extract(path, query, maxChars);
 	}
 
@@ -237,17 +356,23 @@ public class McpServer {
 		return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResults);
 	}
 
+	private static String executeListDirectories(JsonNode args) throws Exception {
+		int depth = args.path("depth").asInt(2);
+		depth = Math.min(Math.max(depth, 1), 10);
+		return indexManager.listDirectories(depth);
+	}
+
 	// --- Tool Definitions ---
 
 	private static ObjectNode buildSearchToolDef() {
 		ObjectNode tool = mapper.createObjectNode();
 		tool.put("name", "search");
 		tool.put("description",
-			"Search DocFetcher indexed documents. Supports Lucene query syntax: " +
-			"terms, phrases (\"exact phrase\"), boolean (AND, OR, NOT), " +
-			"wildcards (*, ?), fuzzy (term~), field-specific (title:word). " +
-			"Returns document metadata (path, title, authors, type, size, score). " +
-			"Content is NOT returned — use get_document_content for that.");
+			"Search indexed documents with paginated results. Returns 10 results per page, " +
+			"each with a relevance-highlighted excerpt. For PDFs, shows which page the match " +
+			"appears on and total page count. Supports Lucene query syntax: terms, phrases " +
+			"(\"exact phrase\"), boolean (AND, OR, NOT), wildcards (*, ?), fuzzy (term~), " +
+			"field-specific (title:word). Use get_document_content to read full document text.");
 
 		ObjectNode schema = mapper.createObjectNode();
 		schema.put("type", "object");
@@ -259,6 +384,11 @@ public class McpServer {
 		queryProp.put("description", "Lucene query string");
 		props.set("query", queryProp);
 
+		ObjectNode pageProp = mapper.createObjectNode();
+		pageProp.put("type", "integer");
+		pageProp.put("description", "Page number (1-indexed, default 1). 10 results per page.");
+		props.set("page", pageProp);
+
 		ObjectNode fileTypesProp = mapper.createObjectNode();
 		fileTypesProp.put("type", "array");
 		ObjectNode ftItems = mapper.createObjectNode();
@@ -267,10 +397,15 @@ public class McpServer {
 		fileTypesProp.put("description", "Filter by file extension, e.g. [\"pdf\", \"docx\"]");
 		props.set("file_types", fileTypesProp);
 
-		ObjectNode maxResultsProp = mapper.createObjectNode();
-		maxResultsProp.put("type", "integer");
-		maxResultsProp.put("description", "Maximum results to return (default 20, max 100)");
-		props.set("max_results", maxResultsProp);
+		ObjectNode scopeProp = mapper.createObjectNode();
+		scopeProp.put("type", "array");
+		ObjectNode scopeItems = mapper.createObjectNode();
+		scopeItems.put("type", "string");
+		scopeProp.set("items", scopeItems);
+		scopeProp.put("description",
+			"Filter by directory paths. Only documents under these directories are returned. " +
+			"Use paths as shown in search results.");
+		props.set("scope", scopeProp);
 
 		ObjectNode minSizeProp = mapper.createObjectNode();
 		minSizeProp.put("type", "integer");
@@ -297,8 +432,8 @@ public class McpServer {
 		tool.put("name", "get_document_content");
 		tool.put("description",
 			"Retrieve the text content of a document by file path. " +
-			"The file must be accessible on disk (the original file is re-parsed). " +
-			"Optionally provide a query to get highlighted snippets around matches.");
+			"For PDFs, supports page-range reading (start_page/end_page). " +
+			"Optionally provide a query to highlight matches with >> and << markers.");
 
 		ObjectNode schema = mapper.createObjectNode();
 		schema.put("type", "object");
@@ -314,6 +449,21 @@ public class McpServer {
 		queryProp.put("type", "string");
 		queryProp.put("description", "Query for highlighting matches in the content");
 		props.set("query", queryProp);
+
+		ObjectNode contentScopeProp = mapper.createObjectNode();
+		contentScopeProp.put("type", "string");
+		contentScopeProp.put("description", "Directory scope for resolving relative paths (from search results)");
+		props.set("scope", contentScopeProp);
+
+		ObjectNode startPageProp = mapper.createObjectNode();
+		startPageProp.put("type", "integer");
+		startPageProp.put("description", "Start page (1-indexed, PDF only)");
+		props.set("start_page", startPageProp);
+
+		ObjectNode endPageProp = mapper.createObjectNode();
+		endPageProp.put("type", "integer");
+		endPageProp.put("description", "End page (1-indexed, PDF only, default: start_page + 4)");
+		props.set("end_page", endPageProp);
 
 		ObjectNode maxCharsProp = mapper.createObjectNode();
 		maxCharsProp.put("type", "integer");
@@ -341,6 +491,29 @@ public class McpServer {
 		schema.put("type", "object");
 		schema.set("properties", mapper.createObjectNode());
 
+		tool.set("inputSchema", schema);
+		return tool;
+	}
+
+	private static ObjectNode buildListDirectoriesToolDef() {
+		ObjectNode tool = mapper.createObjectNode();
+		tool.put("name", "list_directories");
+		tool.put("description",
+			"List the directory tree of indexed documents. Use this to discover " +
+			"available directory paths for the scope parameter in search. " +
+			"Returns an indented tree of directories.");
+
+		ObjectNode schema = mapper.createObjectNode();
+		schema.put("type", "object");
+
+		ObjectNode props = mapper.createObjectNode();
+
+		ObjectNode depthProp = mapper.createObjectNode();
+		depthProp.put("type", "integer");
+		depthProp.put("description", "Tree depth to show (default 2, max 10)");
+		props.set("depth", depthProp);
+
+		schema.set("properties", props);
 		tool.set("inputSchema", schema);
 		return tool;
 	}

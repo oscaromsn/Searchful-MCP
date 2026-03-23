@@ -2,6 +2,8 @@ package net.sourceforge.docfetcher.mcp;
 
 import net.sourceforge.docfetcher.model.Fields;
 import net.sourceforge.docfetcher.model.LuceneIndex;
+import net.sourceforge.docfetcher.model.parse.PageHandler;
+import net.sourceforge.docfetcher.model.parse.PagingPdfParser;
 import net.sourceforge.docfetcher.model.parse.ParseService;
 import net.sourceforge.docfetcher.model.search.PhraseDetectingQueryParser;
 
@@ -11,7 +13,8 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.TokenSources;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +46,7 @@ public class ContentExtractor {
 	 * @return Document text or highlighted snippets
 	 */
 	public String extract(String filePath, String queryStr, int maxChars) throws Exception {
-		File file = new File(filePath);
+		File file = IndexManager.resolveFile(filePath);
 		if (!file.exists()) {
 			throw new IOException("File not found: " + filePath);
 		}
@@ -65,7 +68,7 @@ public class ContentExtractor {
 	 * Extract raw text from a file using DocFetcher's parsers.
 	 * Falls back to reading as plain text if parsing fails.
 	 */
-	private String extractText(String filePath, File file) throws IOException {
+	String extractText(String filePath, File file) throws IOException {
 		// Try using ParseService with the parser name from the index
 		String parserName = indexManager.getParserNameForPath(filePath);
 		if (parserName != null) {
@@ -75,7 +78,7 @@ public class ContentExtractor {
 					String text = ParseService.renderText(
 						luceneIndex.getConfig(), file, file.getName(), parserName);
 					if (text != null && !text.isEmpty()) {
-						return text;
+						return cleanOcrNoise(text);
 					}
 				} catch (Exception e) {
 					System.err.println("ParseService.renderText() failed for "
@@ -96,7 +99,7 @@ public class ContentExtractor {
 		}
 
 		// Last resort: read as plain text
-		return readAsPlainText(file);
+		return cleanOcrNoise(readAsPlainText(file));
 	}
 
 	/**
@@ -211,5 +214,255 @@ public class ContentExtractor {
 		}
 
 		return String.join(SNIPPET_SEPARATOR, snippets);
+	}
+
+	// --- OCR Noise Cleanup ---
+
+	/**
+	 * Remove common OCR garbage from scanned PDF text.
+	 * Conservative heuristics to avoid destroying legitimate text.
+	 */
+	static String cleanOcrNoise(String text) {
+		if (text == null || text.isEmpty()) return text;
+
+		String[] lines = text.split("\n");
+		StringBuilder sb = new StringBuilder();
+		int blankCount = 0;
+
+		for (String line : lines) {
+			String trimmed = line.trim();
+
+			if (trimmed.isEmpty()) {
+				blankCount++;
+				if (blankCount <= 2) sb.append("\n");
+				continue;
+			}
+			blankCount = 0;
+
+			// Count alphanumeric + space characters
+			long alnumCount = trimmed.chars()
+				.filter(c -> Character.isLetterOrDigit(c) || c == ' ')
+				.count();
+			double ratio = (double) alnumCount / trimmed.length();
+
+			// Skip short lines with low alphanumeric ratio (OCR noise)
+			if (trimmed.length() < 80 && ratio < 0.3) continue;
+
+			// Skip lines with no letters at all (pure symbols/numbers fragments)
+			if (trimmed.chars().noneMatch(Character::isLetter)) continue;
+
+			sb.append(line).append("\n");
+		}
+
+		return sb.toString().stripTrailing();
+	}
+
+	// --- Page-range extraction for PDFs ---
+
+	/**
+	 * Extract text from specific pages of a PDF document.
+	 */
+	public PagedContent extractPages(String filePath, int startPage, int endPage,
+			String queryStr, int maxChars) throws Exception {
+		File file = IndexManager.resolveFile(filePath);
+		if (!file.exists()) {
+			throw new IOException("File not found: " + filePath);
+		}
+
+		String ext = "";
+		int dotIdx = filePath.lastIndexOf('.');
+		if (dotIdx >= 0) ext = filePath.substring(dotIdx + 1).toLowerCase();
+
+		if (!"pdf".equals(ext)) {
+			// Non-PDF: fall back to full text extraction
+			PagedContent pc = new PagedContent();
+			pc.totalPages = 0;
+			pc.startPage = 0;
+			pc.endPage = 0;
+			pc.text = "Page-level navigation is only supported for PDF files.\n\n"
+				+ extract(filePath, queryStr, maxChars);
+			return pc;
+		}
+
+		// Get total page count
+		int totalPages;
+		try (PDDocument doc = PDDocument.load(file)) {
+			totalPages = doc.getNumberOfPages();
+		}
+
+		// Clamp page range
+		startPage = Math.max(1, Math.min(startPage, totalPages));
+		endPage = Math.max(startPage, Math.min(endPage, totalPages));
+
+		// Extract pages using PagingPdfParser
+		int finalStartPage = startPage;
+		int finalEndPage = endPage;
+		StringBuilder sb = new StringBuilder();
+		int[] currentPage = {0};
+		int[] charsWritten = {0};
+
+		// Optional highlighter
+		Highlighter highlighter = null;
+		Analyzer analyzer = null;
+		if (queryStr != null && !queryStr.isBlank()) {
+			analyzer = indexManager.getAnalyzer();
+			PhraseDetectingQueryParser parser = new PhraseDetectingQueryParser(
+				Fields.CONTENT.key(), analyzer);
+			parser.setAllowLeadingWildcard(true);
+			Query query = parser.parse(queryStr);
+			SimpleHTMLFormatter formatter = new SimpleHTMLFormatter(">>", "<<");
+			QueryScorer scorer = new QueryScorer(query, Fields.CONTENT.key());
+			highlighter = new Highlighter(formatter, scorer);
+		}
+
+		final Highlighter hl = highlighter;
+		final Analyzer an = analyzer;
+
+		new PagingPdfParser(file, pageText -> {
+			currentPage[0]++;
+
+			if (currentPage[0] < finalStartPage) return false; // skip
+			if (currentPage[0] > finalEndPage) return true;    // stop
+
+			if (charsWritten[0] >= maxChars) return true;
+
+			sb.append("--- Page ").append(currentPage[0]).append(" ---\n");
+
+			String text = pageText != null ? cleanOcrNoise(pageText.trim()) : "";
+
+			// Apply highlighting if query provided
+			if (hl != null && an != null && !text.isEmpty()) {
+				try {
+					hl.setMaxDocCharsToAnalyze(text.length());
+					int maxFragments = Math.max(1, (maxChars - charsWritten[0]) / SNIPPET_CONTEXT_CHARS);
+					TextFragment[] fragments = hl.getBestTextFragments(
+						an.tokenStream(Fields.CONTENT.key(), text),
+						text, true, maxFragments);
+					if (fragments != null && fragments.length > 0) {
+						StringBuilder highlighted = new StringBuilder();
+						for (TextFragment frag : fragments) {
+							highlighted.append(frag.toString());
+						}
+						text = highlighted.toString().trim();
+					}
+				} catch (Exception e) {
+					// Use unhighlighted text
+				}
+			}
+
+			int remaining = maxChars - charsWritten[0];
+			if (text.length() > remaining) {
+				sb.append(text, 0, remaining).append("...\n");
+				charsWritten[0] = maxChars;
+			} else {
+				sb.append(text).append("\n\n");
+				charsWritten[0] += text.length();
+			}
+
+			return currentPage[0] >= finalEndPage || charsWritten[0] >= maxChars;
+		}).run();
+
+		PagedContent pc = new PagedContent();
+		pc.text = sb.toString();
+		pc.startPage = startPage;
+		pc.endPage = Math.min(endPage, currentPage[0]);
+		pc.totalPages = totalPages;
+		return pc;
+	}
+
+	public static class PagedContent {
+		public String text;
+		public int startPage;
+		public int endPage;
+		public int totalPages;
+	}
+
+	// --- Search within document (page-level) ---
+
+	/**
+	 * Search within a PDF for pages containing query matches.
+	 * Returns only matching pages with highlighted snippets (not full pages).
+	 */
+	public PageSearchResult searchPages(String filePath, String queryStr,
+			int maxChars, int maxMatchingPages) throws Exception {
+		File file = IndexManager.resolveFile(filePath);
+		if (!file.exists()) {
+			throw new IOException("File not found: " + filePath);
+		}
+
+		int totalPages;
+		try (PDDocument doc = PDDocument.load(file)) {
+			totalPages = doc.getNumberOfPages();
+		}
+
+		Analyzer analyzer = indexManager.getAnalyzer();
+		PhraseDetectingQueryParser parser = new PhraseDetectingQueryParser(
+			Fields.CONTENT.key(), analyzer);
+		parser.setAllowLeadingWildcard(true);
+		Query query = parser.parse(queryStr);
+
+		SimpleHTMLFormatter formatter = new SimpleHTMLFormatter(">>", "<<");
+		QueryScorer scorer = new QueryScorer(query, Fields.CONTENT.key());
+		Highlighter highlighter = new Highlighter(formatter, scorer);
+
+		StringBuilder sb = new StringBuilder();
+		int[] currentPage = {0};
+		int[] matchCount = {0};
+		int[] charsWritten = {0};
+		List<Integer> matchingPageNumbers = new ArrayList<>();
+
+		new PagingPdfParser(file, pageText -> {
+			currentPage[0]++;
+
+			if (pageText == null || pageText.isBlank()) return false;
+			if (matchCount[0] >= maxMatchingPages) return true;
+			if (charsWritten[0] >= maxChars) return true;
+
+			try {
+				String text = cleanOcrNoise(pageText.trim());
+				if (text.isEmpty()) return false;
+
+				highlighter.setMaxDocCharsToAnalyze(text.length());
+				TextFragment[] fragments = highlighter.getBestTextFragments(
+					analyzer.tokenStream(Fields.CONTENT.key(), text),
+					text, false, 3);
+
+				if (fragments != null) {
+					StringBuilder snippetBuilder = new StringBuilder();
+					for (TextFragment frag : fragments) {
+						if (frag.getScore() > 0) {
+							if (!snippetBuilder.isEmpty()) snippetBuilder.append(" ... ");
+							snippetBuilder.append(frag.toString().trim());
+						}
+					}
+					if (!snippetBuilder.isEmpty()) {
+						String snippet = snippetBuilder.toString();
+						sb.append("[p.").append(currentPage[0]).append("] ");
+						sb.append(snippet).append("\n\n");
+						charsWritten[0] += snippet.length() + 10;
+						matchCount[0]++;
+						matchingPageNumbers.add(currentPage[0]);
+					}
+				}
+			} catch (Exception e) {
+				// Continue to next page
+			}
+
+			return matchCount[0] >= maxMatchingPages || charsWritten[0] >= maxChars;
+		}).run();
+
+		PageSearchResult result = new PageSearchResult();
+		result.totalPages = totalPages;
+		result.matchingPages = matchCount[0];
+		result.matchingPageNumbers = matchingPageNumbers;
+		result.text = sb.toString().stripTrailing();
+		return result;
+	}
+
+	public static class PageSearchResult {
+		public String text;
+		public int totalPages;
+		public int matchingPages;
+		public List<Integer> matchingPageNumbers;
 	}
 }
